@@ -19,8 +19,12 @@ interface AuthState {
   user: User | null;
   requiresTwoFactor: boolean;
   twoFactorRememberMe: boolean;
+  isLoading?: boolean;
+  error?: string | null;
   initialize: () => Promise<void>;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<unknown>;
+  loginWith2fa: (twoFactorCode: string, rememberMachine?: boolean) => Promise<void>;
+  loginWithRecoveryCode: (recoveryCode: string) => Promise<void>;
   register: (userData: any) => Promise<unknown>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
@@ -170,8 +174,3 @@ export const useAuthStore = create<AuthState>()(
     }
   })
 );
-
-interface AuthActions {
-  loginWith2fa: (twoFactorCode: string, rememberMachine?: boolean) => Promise<void>;
-  loginWithRecoveryCode: (recoveryCode: string) => Promise<void>;
-}
