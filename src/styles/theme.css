@@ -1,0 +1,281 @@
+@theme {
+  --color-bittersweet: #ff595e;
+  --color-bittersweet-100: #440002;
+  --color-bittersweet-200: #890005;
+  --color-bittersweet-300: #cd0007;
+  --color-bittersweet-400: #ff121a;
+  --color-bittersweet-500: #ff595e;
+  --color-bittersweet-600: #ff787d;
+  --color-bittersweet-700: #ff9a9d;
+  --color-bittersweet-800: #ffbcbe;
+  --color-bittersweet-900: #ffddde;
+
+  --color-sunglow: #ffca3a;
+  --color-sunglow-100: #3e2e00;
+  --color-sunglow-200: #7c5b00;
+  --color-sunglow-300: #bb8900;
+  --color-sunglow-400: #f9b700;
+  --color-sunglow-500: #ffca3a;
+  --color-sunglow-600: #ffd560;
+  --color-sunglow-700: #ffdf88;
+  --color-sunglow-800: #ffeaaf;
+  --color-sunglow-900: #fff4d7;
+
+  --color-yellow-green: #8ac926;
+  --color-yellow-green-100: #1c2808;
+  --color-yellow-green-200: #38510f;
+  --color-yellow-green-300: #537917;
+  --color-yellow-green-400: #6fa11f;
+  --color-yellow-green-500: #8ac926;
+  --color-yellow-green-600: #a4dc49;
+  --color-yellow-green-700: #bbe577;
+  --color-yellow-green-800: #d2eea4;
+  --color-yellow-green-900: #e8f6d2;
+
+  --color-steel-blue: #1982c4;
+  --color-steel-blue-100: #051a27;
+  --color-steel-blue-200: #0a344e;
+  --color-steel-blue-300: #0f4e74;
+  --color-steel-blue-400: #14679b;
+  --color-steel-blue-500: #1982c4;
+  --color-steel-blue-600: #31a0e4;
+  --color-steel-blue-700: #65b7eb;
+  --color-steel-blue-800: #98cff2;
+  --color-steel-blue-900: #cce7f8;
+
+  --color-ultra-violet: #6a4c93;
+  --color-ultra-violet-100: #150f1e;
+  --color-ultra-violet-200: #2a1f3b;
+  --color-ultra-violet-300: #402e59;
+  --color-ultra-violet-400: #553d76;
+  --color-ultra-violet-500: #6a4c93;
+  --color-ultra-violet-600: #8768b1;
+  --color-ultra-violet-700: #a58ec5;
+  --color-ultra-violet-800: #c3b4d8;
+  --color-ultra-violet-900: #e1d9ec;
+
+  /* Background Colors */
+  --bg-white: #fff;
+  --bg-black: #000;
+  --bg-gray-50: #f9fafb;
+  --bg-gray-100: #f3f4f6;
+  --bg-gray-200: #e5e7eb;
+  --bg-gray-300: #d1d5db;
+  --bg-gray-400: #9ca3af;
+  --bg-gray-500: #6b7280;
+  --bg-gray-600: #4b5563;
+  --bg-gray-700: #374151;
+  --bg-gray-800: #1f2937;
+  --bg-gray-900: #111827;
+  
+  --bg-bittersweet: var(--color-bittersweet);
+  --bg-sunglow: var(--color-sunglow);
+  --bg-yellow-green: var(--color-yellow-green);
+  --bg-steel-blue: var(--color-steel-blue);
+  --bg-ultra-violet: var(--color-ultra-violet);
+
+  /* Text Colors */
+  --text-white: #fff;
+  --text-black: #000;
+  --text-gray-50: #f9fafb;
+  --text-gray-100: #f3f4f6;
+  --text-gray-200: #e5e7eb;
+  --text-gray-300: #d1d5db;
+  --text-gray-400: #9ca3af;
+  --text-gray-500: #6b7280;
+  --text-gray-600: #4b5563;
+  --text-gray-700: #374151;
+  --text-gray-800: #1f2937;
+  --text-gray-900: #111827;
+  
+  --text-bittersweet: var(--color-bittersweet);
+  --text-sunglow: var(--color-sunglow);
+  --text-yellow-green: var(--color-yellow-green);
+  --text-steel-blue: var(--color-steel-blue);
+  --text-ultra-violet: var(--color-ultra-violet);
+
+  /* Border Colors */
+  --border-transparent: transparent;
+  --border-current: currentColor;
+  --border-white: #fff;
+  --border-black: #000;
+  --border-gray-50: #f9fafb;
+  --border-gray-100: #f3f4f6;
+  --border-gray-200: #e5e7eb;
+  --border-gray-300: #d1d5db;
+  --border-gray-400: #9ca3af;
+  --border-gray-500: #6b7280;
+  --border-gray-600: #4b5563;
+  --border-gray-700: #374151;
+  --border-gray-800: #1f2937;
+  --border-gray-900: #111827;
+  
+  --border-bittersweet: var(--color-bittersweet);
+  --border-sunglow: var(--color-sunglow);
+  --border-yellow-green: var(--color-yellow-green);
+  --border-steel-blue: var(--color-steel-blue);
+  --border-ultra-violet: var(--color-ultra-violet);
+
+  /* Ring Colors (Focus States) */
+  --ring-transparent: transparent;
+  --ring-current: currentColor;
+  --ring-white: #fff;
+  --ring-black: #000;
+  --ring-gray-50: #f9fafb;
+  --ring-gray-100: #f3f4f6;
+  --ring-gray-200: #e5e7eb;
+  --ring-gray-300: #d1d5db;
+  --ring-gray-400: #9ca3af;
+  --ring-gray-500: #6b7280;
+  --ring-gray-600: #4b5563;
+  --ring-gray-700: #374151;
+  --ring-gray-800: #1f2937;
+  --ring-gray-900: #111827;
+  
+  --ring-bittersweet: var(--color-bittersweet);
+  --ring-sunglow: var(--color-sunglow);
+  --ring-yellow-green: var(--color-yellow-green);
+  --ring-steel-blue: var(--color-steel-blue);
+  --ring-ultra-violet: var(--color-ultra-violet);
+  
+  --ring-opacity-0: 0;
+  --ring-opacity-5: 0.05;
+  --ring-opacity-10: 0.1;
+  --ring-opacity-20: 0.2;
+  --ring-opacity-25: 0.25;
+  --ring-opacity-30: 0.3;
+  --ring-opacity-40: 0.4;
+  --ring-opacity-50: 0.5;
+  --ring-opacity-60: 0.6;
+  --ring-opacity-70: 0.7;
+  --ring-opacity-75: 0.75;
+  --ring-opacity-80: 0.8;
+  --ring-opacity-90: 0.9;
+  --ring-opacity-95: 0.95;
+  --ring-opacity-100: 1;
+  
+  --ring-offset-0: 0px;
+  --ring-offset-1: 1px;
+  --ring-offset-2: 2px;
+  --ring-offset-4: 4px;
+  --ring-offset-8: 8px;
+
+  /* Text Colors for Better Contrast */
+  --text-on-white: #111827;
+  --text-on-black: #fff;
+  --text-on-bittersweet: white;
+  --text-on-sunglow: #333;
+  --text-on-yellow-green: #333;
+  --text-on-steel-blue: white;
+  --text-on-ultra-violet: white;
+
+  /* Button Gradients */
+  --gradient-bittersweet: linear-gradient(135deg, var(--color-bittersweet), var(--color-bittersweet-700));
+  --gradient-sunglow: linear-gradient(135deg, var(--color-sunglow), var(--color-sunglow-700));
+  --gradient-yellow-green: linear-gradient(135deg, var(--color-yellow-green), var(--color-yellow-green-700));
+  --gradient-steel-blue: linear-gradient(135deg, var(--color-steel-blue), var(--color-steel-blue-700));
+  --gradient-ultra-violet: linear-gradient(135deg, var(--color-ultra-violet), var(--color-ultra-violet-700));
+  
+  /* Cross-palette Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--color-steel-blue), var(--color-yellow-green));
+  --gradient-secondary: linear-gradient(135deg, var(--color-ultra-violet), var(--color-bittersweet));
+  --gradient-tertiary: linear-gradient(135deg, var(--color-sunglow), var(--color-yellow-green));
+  --gradient-accent: linear-gradient(135deg, var(--color-bittersweet), var(--color-sunglow));
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  --shadow-bittersweet: 0 4px 12px rgba(255, 89, 94, 0.25);
+  --shadow-sunglow: 0 4px 12px rgba(255, 202, 58, 0.25);
+  --shadow-yellow-green: 0 4px 12px rgba(138, 201, 38, 0.25);
+  --shadow-steel-blue: 0 4px 12px rgba(25, 130, 196, 0.25);
+  --shadow-ultra-violet: 0 4px 12px rgba(106, 76, 147, 0.25);
+
+  /* Opacity Variants */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-25: 0.25;
+  --opacity-30: 0.3;
+  --opacity-40: 0.4;
+  --opacity-50: 0.5;
+  --opacity-60: 0.6;
+  --opacity-70: 0.7;
+  --opacity-75: 0.75;
+  --opacity-80: 0.8;
+  --opacity-90: 0.9;
+  --opacity-95: 0.95;
+  --opacity-100: 1;
+
+  /* Scrollbar Styles */
+  --scrollbar-width-thin: 6px;
+  --scrollbar-width-normal: 8px;
+  --scrollbar-width-thick: 12px;
+  
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: oklch(0.553 0.013 58.071 / 0.3);
+  --scrollbar-thumb-hover: oklch(0.553 0.013 58.071 / 0.5);
+  --scrollbar-thumb-active: oklch(0.553 0.013 58.071 / 0.7);
+  
+  --scrollbar-thumb-dark: oklch(0.709 0.01 56.259 / 0.3);
+  --scrollbar-thumb-hover-dark: oklch(0.709 0.01 56.259 / 0.5);
+  --scrollbar-thumb-active-dark: oklch(0.709 0.01 56.259 / 0.7);
+
+
+  /* Animation */
+  --animate-slide-down: slide-down .1s ease-out;
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-bounce: bounce 1s infinite;
+  --animate-spin: spin 1s linear infinite;
+  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes slide-down {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @keyframes ping {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+}
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
