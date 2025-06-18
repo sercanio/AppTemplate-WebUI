@@ -23,7 +23,13 @@ export default function Dashboard() {
         setStatistics(stats);
       } catch (error) {
         console.error("Failed to load dashboard statistics:", error);
-        toast.error("Failed to load dashboard statistics");
+        toast.error("Failed to load dashboard statistics", {
+          description: "Unable to fetch the latest data from the server",
+          action: {
+            label: "Retry",
+            onClick: () => window.location.reload(),
+          },
+        });
         // Set fallback statistics
         setStatistics({
           userCount: 0,

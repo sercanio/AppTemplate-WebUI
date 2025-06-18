@@ -97,7 +97,13 @@ export default function UsersManagement() {
         setAvailableRoles(rolesData.items);
       } catch (error) {
         console.error("Failed to load roles:", error);
-        toast.error("Failed to load roles");
+        toast.error("Failed to load roles", {
+          description: "There was an error loading the available roles.",
+          action: {
+            label: "Retry",
+            onClick: () => window.location.reload(),
+          },
+        });
       }
     };
 
@@ -161,7 +167,13 @@ export default function UsersManagement() {
       setTotalCount(usersData.totalCount);
     } catch (error) {
       console.error("Failed to load users:", error);
-      toast.error("Failed to load users");
+      toast.error("Failed to load users", {
+        description: "There was an error loading the user list. Please try refreshing the page.",
+        action: {
+          label: "Retry",
+          onClick: () => loadUsers(),
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -250,11 +262,21 @@ export default function UsersManagement() {
   const handleRoleToggle = async (roleId: string, isGranted: boolean) => {
     if (!selectedUser) return;
 
+    const role = availableRoles.find((r) => r.id === roleId);
+    if (!role) return;
+
     try {
       const updateData = {
         operation: isGranted ? "Add" : ("Remove" as "Add" | "Remove"),
         roleId: roleId,
       };
+
+      toast.loading(
+        isGranted 
+          ? `Assigning "${role.name}" role...` 
+          : `Removing "${role.name}" role...`, 
+        { id: "role-update" }
+      );
 
       await UserManagementService.updateUserRoles(selectedUser.id, updateData);
 
@@ -262,9 +284,9 @@ export default function UsersManagement() {
       const updatedRoles = isGranted
         ? [
             ...(selectedUser.roles || []),
-            availableRoles.find((r) => r.id === roleId)!,
+            role,
           ]
-        : (selectedUser.roles || []).filter((role) => role.id !== roleId);
+        : (selectedUser.roles || []).filter((userRole) => userRole.id !== roleId);
 
       const updatedUser = {
         ...selectedUser,
@@ -283,13 +305,29 @@ export default function UsersManagement() {
       );
 
       toast.success(
-        isGranted ? "Role added successfully" : "Role removed successfully"
+        isGranted 
+          ? `Role assigned successfully`
+          : `Role removed successfully`,
+        {
+          id: "role-update",
+          description: isGranted 
+            ? `${selectedUser.userName} now has the "${role.name}" role`
+            : `${selectedUser.userName} no longer has the "${role.name}" role`,
+          action: {
+            label: "Undo",
+            onClick: () => handleRoleToggle(roleId, !isGranted),
+          },
+        }
       );
     } catch (error) {
       console.error("Failed to update user role:", error);
       toast.error("Failed to update user role", {
-        description:
-          "There was an error updating the user's role. Please try again.",
+        id: "role-update",
+        description: "There was an error updating the user's role. Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => handleRoleToggle(roleId, isGranted),
+        },
       });
     }
   };

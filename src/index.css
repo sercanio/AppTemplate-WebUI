@@ -178,6 +178,138 @@
   .dark * {
     scrollbar-color: var(--scrollbar-thumb-dark) var(--scrollbar-track);
   }
+
+  /* Enhanced Sonner Toast Styling */
+  [data-sonner-toaster] {
+    --normal-bg: var(--background);
+    --normal-border: var(--border);
+    --normal-text: var(--foreground);
+    --success-bg: var(--background);
+    --success-border: var(--color-yellow-green);
+    --success-text: var(--foreground);
+    --error-bg: var(--background);
+    --error-border: var(--color-bittersweet);
+    --error-text: var(--foreground);
+    --warning-bg: var(--background);
+    --warning-border: var(--color-sunglow);
+    --warning-text: var(--foreground);
+    --info-bg: var(--background);
+    --info-border: var(--color-steel-blue);
+    --info-text: var(--foreground);
+  }
+
+  [data-sonner-toast] {
+    background: var(--normal-bg) !important;
+    border: 1px solid var(--normal-border) !important;
+    color: var(--normal-text) !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+
+  [data-sonner-toast][data-type="success"] {
+    background: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+    color: var(--success-text) !important;
+    border-left: 4px solid var(--success-border) !important;
+  }
+
+  [data-sonner-toast][data-type="success"] [data-icon] {
+    color: var(--color-yellow-green) !important;
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    background: var(--error-bg) !important;
+    border-color: var(--error-border) !important;
+    color: var(--error-text) !important;
+    border-left: 4px solid var(--error-border) !important;
+  }
+
+  [data-sonner-toast][data-type="error"] [data-icon] {
+    color: var(--color-bittersweet) !important;
+  }
+
+  [data-sonner-toast][data-type="warning"] {
+    background: var(--warning-bg) !important;
+    border-color: var(--warning-border) !important;
+    color: var(--warning-text) !important;
+    border-left: 4px solid var(--warning-border) !important;
+  }
+
+  [data-sonner-toast][data-type="warning"] [data-icon] {
+    color: var(--color-sunglow) !important;
+  }
+
+  [data-sonner-toast][data-type="info"] {
+    background: var(--info-bg) !important;
+    border-color: var(--info-border) !important;
+    color: var(--info-text) !important;
+    border-left: 4px solid var(--info-border) !important;
+  }
+
+  [data-sonner-toast][data-type="info"] [data-icon] {
+    color: var(--color-steel-blue) !important;
+  }
+
+  [data-sonner-toast] [data-description] {
+    color: var(--muted-foreground) !important;
+  }
+
+  [data-sonner-toast] [data-button] {
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    border-radius: calc(var(--radius) - 2px) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+    padding: 6px 12px !important;
+  }
+
+  [data-sonner-toast] [data-button]:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  [data-sonner-toast] [data-cancel-button] {
+    background: var(--muted) !important;
+    color: var(--muted-foreground) !important;
+  }
+
+  /* Loading spinner styling */
+  [data-sonner-toast] [data-loading] {
+    color: var(--color-steel-blue) !important;
+  }
+
+  /* Close button styling */
+  [data-sonner-toast] [data-close-button] {
+    background: var(--muted) !important;
+    color: var(--muted-foreground) !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+    border-radius: 50% !important;
+  }
+
+  [data-sonner-toast] [data-close-button]:hover {
+    background: var(--muted) !important;
+    opacity: 0.8 !important;
+  }
+
+  /* Dark mode specific adjustments */
+  .dark [data-sonner-toaster] {
+    --normal-bg: var(--card);
+    --normal-border: var(--border);
+    --normal-text: var(--foreground);
+  }
+
+  .dark [data-sonner-toast] {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+  }
+
+  /* Ensure proper dark mode styling */
+  .dark [data-sonner-toaster] {
+    --normal-bg: var(--background);
+    --normal-border: var(--border);
+    --normal-text: var(--foreground);
+  }
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
