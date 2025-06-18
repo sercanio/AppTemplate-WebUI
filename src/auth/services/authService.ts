@@ -2,6 +2,24 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5070/api/v1';
 
+export interface LoginResponse {
+  message: string;
+}
+
+export interface TwoFactorRequiredResponse {
+  message: "Two-factor authentication required.";
+}
+
+export interface LoginWith2faRequest {
+  twoFactorCode: string;
+  rememberMe: boolean;
+  rememberMachine: boolean;
+}
+
+export interface LoginWithRecoveryCodeRequest {
+  recoveryCode: string;
+}
+
 export class AuthService {  static async initializeAntiForgeryToken(): Promise<void> {
     try {
       const response = await axios.get(
@@ -22,24 +40,82 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
     }
   }
   
-  static async login(loginIdentifier: string, password: string, rememberMe: boolean = false): Promise<any> {
+  static async login(
+    loginIdentifier: string,
+    password: string,
+    rememberMe: boolean = false
+  ): Promise<LoginResponse> {
     try {
-      const response = await axios.post(
-        `${API_URL}/Account/login`, 
-        { 
-          LoginIdentifier: loginIdentifier,
-          Password: password,
-          RememberMe: rememberMe
-        }, 
-        { 
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/login`,
+        {
+          loginIdentifier,
+          password,
+          rememberMe,
+        },
+        {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
+
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      throw error;
+    }
+  }
+
+  static async loginWith2fa(
+    twoFactorCode: string,
+    rememberMe: boolean = false,
+    rememberMachine: boolean = false
+  ): Promise<LoginResponse> {
+    try {
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/loginwith2fa`,
+        {
+          twoFactorCode,
+          rememberMe,
+          rememberMachine,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error("2FA login failed:", error);
+      throw error;
+    }
+  }
+
+  static async loginWithRecoveryCode(
+    recoveryCode: string
+  ): Promise<LoginResponse> {
+    try {
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/loginwithrecoverycode`,
+        {
+          recoveryCode,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Recovery code login failed:", error);
       throw error;
     }
   }

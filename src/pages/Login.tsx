@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../auth/store/authStore'
+import { TwoFactorLogin } from '../components/TwoFactorLogin'
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -12,20 +13,16 @@ import { Leaf, AlertCircle } from 'lucide-react'
 export default function Login() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { login } = useAuthStore()
+    const { login, requiresTwoFactor, isLoading, error } = useAuthStore()
     
     const [formData, setFormData] = useState({
         loginIdentifier: '',
         password: '',
         rememberMe: false,
     })
-    const [error, setError] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError(null)
-        setIsLoading(true)
 
         try {
             await login(
@@ -34,44 +31,37 @@ export default function Login() {
                 formData.rememberMe
             )
             
-            // Redirect to the page they were trying to access, or dashboard
-            const from = location.state?.from?.pathname || '/'
-            navigate(from, { replace: true })
-        } catch (err: any) {
-            // Enhanced error handling
-            if (err.response && err.response.data) {
-                const responseData = err.response.data;
-                
-                // Check for validation errors
-                if (responseData.errors) {
-                    // Flatten validation errors into a single message
-                    const errorMessages = Object.entries(responseData.errors)
-                        .map(([field, messages]) => {
-                            if (Array.isArray(messages)) {
-                                return messages.join('. ');
-                            }
-                            return `${field}: ${messages}`;
-                        })
-                        .join('. ');
-                    
-                    setError(errorMessages);
-                } else if (responseData.message) {
-                    // Use the error message from the response
-                    setError(responseData.message);
-                } else if (responseData.title) {
-                    // Use the error title if available
-                    setError(responseData.title);
-                } else {
-                    // Fallback error message
-                    setError('Invalid credentials. Please check your username/email and password.');
-                }
-            } else {
-                // Generic error message
-                setError(err.message || 'An error occurred during login. Please try again.');
+            // If 2FA is not required, redirect immediately
+            if (!requiresTwoFactor) {
+                const from = location.state?.from?.pathname || '/'
+                navigate(from, { replace: true })
             }
-        } finally {
-            setIsLoading(false)
+        } catch (err: any) {
+            // Error is handled by the auth store
+            console.error('Login error:', err)
         }
+    }
+
+    const handleBackToLogin = () => {
+        useAuthStore.setState({ requiresTwoFactor: false, error: null });
+        setFormData({ loginIdentifier: '', password: '', rememberMe: false });
+    };
+
+    // If 2FA is required, show the 2FA component
+    if (requiresTwoFactor) {
+        return (
+            <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/50">
+                <div className="max-w-md w-full">
+                    <div className="flex justify-center mb-6">
+                        <div className="bg-gradient-to-r from-yellow-green to-steel-blue p-3 rounded-full shadow-steel-blue">
+                            <Leaf className="h-8 w-8 text-white" />
+                        </div>
+                    </div>
+                    
+                    <TwoFactorLogin onBack={handleBackToLogin} />
+                </div>
+            </div>
+        );
     }
 
     return (

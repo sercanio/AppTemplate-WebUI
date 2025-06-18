@@ -13,30 +13,36 @@ export type User = {
   notificationPreferences: any;
 };
 
-type AuthState = {
+interface AuthState {
   isInitialized: boolean;
   isAuthenticated: boolean;
   user: User | null;
+  requiresTwoFactor: boolean;
+  twoFactorRememberMe: boolean;
   initialize: () => Promise<void>;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<unknown>;
   register: (userData: any) => Promise<unknown>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
-};
+}
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isInitialized: false,
-  isAuthenticated: false,
-  user: null,
+export const useAuthStore = create<AuthState>()(
+  (set, get) => ({
+    isInitialized: false,
+    isAuthenticated: false,
+    user: null,
+    requiresTwoFactor: false,
+    twoFactorRememberMe: false,
+
     initialize: async () => {
-    const state = useAuthStore.getState();
-    if (state.isInitialized) {
-      return;
-    }
+      const state = useAuthStore.getState();
+      if (state.isInitialized) {
+        return;
+      }
 
-    await AuthService.initializeAntiForgeryToken();
-    try {
-      const currentUser = await AuthService.getCurrentUser();
+      await AuthService.initializeAntiForgeryToken();
+      try {
+        const currentUser = await AuthService.getCurrentUser();
         if (currentUser) {
           set({ 
             user: currentUser,
@@ -46,60 +52,126 @@ export const useAuthStore = create<AuthState>((set) => ({
         } else {
           set({ isInitialized: true });
         }
-    } catch (error) {
-      set({ isInitialized: true });
-    }
-  },
-  
-  login: async (email: string, password: string, rememberMe: boolean = false) => {
-    try {
-      const response = await AuthService.login(email, password, rememberMe);
+      } catch (error) {
+        set({ isInitialized: true });
+      }
+    },
+    
+    login: async (
+      loginIdentifier: string,
+      password: string,
+      rememberMe: boolean = false
+    ) => {
+      try {
+        set({ isLoading: true, error: null });
+        
+        const response = await AuthService.login(loginIdentifier, password, rememberMe);
+        
+        // Check if 2FA is required based on the exact message
+        if (response.message === "Two-factor authentication required.") {
+          set({ 
+            requiresTwoFactor: true, 
+            twoFactorRememberMe: rememberMe,
+            isLoading: false 
+          });
+          return;
+        }
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      
-      const currentUser = await AuthService.getCurrentUser();
-      
-      if (currentUser) {
+        // Regular login success - get user data
+        const userResponse = await AuthService.getCurrentUser();
         set({
-          user: currentUser,
-          isAuthenticated: true
+          user: userResponse,
+          isAuthenticated: true,
+          isLoading: false,
+          requiresTwoFactor: false,
+          twoFactorRememberMe: false,
         });
-        return { success: true, user: currentUser };
+      } catch (error: any) {
+        set({
+          error: error.response?.data?.error || error.response?.data?.message || "Login failed",
+          isLoading: false,
+          requiresTwoFactor: false,
+        });
+        throw error;
       }
-      
-      throw new Error('Login successful but failed to get user data');
-    } catch (error) {
-      set({
-        user: null,
-        isAuthenticated: false
-      });
-      throw error;
-    }
-  },
-  
-  register: async (userData: any) => {
-    const response = await AuthService.register(userData);
-    if (response.user) {
-      set({
-        user: response.user,
-        isAuthenticated: true
-      });
-    }
-    return response;
-  },
+    },
+
+    loginWith2fa: async (
+      twoFactorCode: string,
+      rememberMachine: boolean = false
+    ) => {
+      try {
+        set({ isLoading: true, error: null });
+        
+        const { twoFactorRememberMe } = get();
+        await AuthService.loginWith2fa(twoFactorCode, twoFactorRememberMe, rememberMachine);
+        
+        const userResponse = await AuthService.getCurrentUser();
+        set({
+          user: userResponse,
+          isAuthenticated: true,
+          isLoading: false,
+          requiresTwoFactor: false,
+          twoFactorRememberMe: false,
+        });
+      } catch (error: any) {
+        set({
+          error: error.response?.data?.error || error.response?.data?.message || "2FA verification failed",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
+    loginWithRecoveryCode: async (recoveryCode: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        
+        await AuthService.loginWithRecoveryCode(recoveryCode);
+        
+        const userResponse = await AuthService.getCurrentUser();
+        set({
+          user: userResponse,
+          isAuthenticated: true,
+          isLoading: false,
+          requiresTwoFactor: false,
+          twoFactorRememberMe: false,
+        });
+      } catch (error: any) {
+        set({
+          error: error.response?.data?.error || error.response?.data?.message || "Recovery code verification failed",
+          isLoading: false,
+        });
+        throw error;
+      }
+    },
+
     logout: async () => {
-    await AuthService.logout();
-    set({
-      user: null,
-      isAuthenticated: false
-    });
-  },
-  
-  updateUser: (userData: Partial<User>) => {
-    set((state) => ({
-      user: state.user ? { ...state.user, ...userData } : null
-    }));
-  }
-}));
+      try {
+        await AuthService.logout();
+      } catch (error) {
+        console.error("Logout error:", error);
+      } finally {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+          requiresTwoFactor: false,
+          twoFactorRememberMe: false,
+        });
+      }
+    },
+
+    updateUser: (userData: Partial<User>) => {
+      set((state) => ({
+        user: state.user ? { ...state.user, ...userData } : null
+      }));
+    }
+  })
+);
+
+interface AuthActions {
+  loginWith2fa: (twoFactorCode: string, rememberMachine?: boolean) => Promise<void>;
+  loginWithRecoveryCode: (recoveryCode: string) => Promise<void>;
+}
