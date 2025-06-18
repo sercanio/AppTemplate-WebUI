@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Alert, AlertDescription } from "./ui/alert";
 import { Shield, AlertCircle, Key } from 'lucide-react';
 import { useAuthStore } from '../auth/store/authStore';
+import { toast } from 'sonner';
 
 interface TwoFactorLoginProps {
   onBack: () => void;
@@ -36,7 +37,7 @@ export function TwoFactorLogin({ onBack }: TwoFactorLoginProps) {
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (error) {
-      // Error is handled by the store
+      toast.error('Verification failed. Please check your code and try again.');
     }
   };
 

@@ -56,8 +56,24 @@ export const useAuthStore = create<AuthState>()(
         } else {
           set({ isInitialized: true });
         }
-      } catch (error) {
+      } catch {
         set({ isInitialized: true });
+      }
+    },
+
+    register: async (userData: any) => {
+      try {
+        set({ isLoading: true, error: null });
+        const response = await AuthService.register(userData);
+        set({ isLoading: false });
+        return response;
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string; message?: string } } };
+        set({
+          error: err.response?.data?.error || err.response?.data?.message || "Registration failed",
+          isLoading: false,
+        });
+        throw error;
       }
     },
     
@@ -90,9 +106,10 @@ export const useAuthStore = create<AuthState>()(
           requiresTwoFactor: false,
           twoFactorRememberMe: false,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string; message?: string } } };
         set({
-          error: error.response?.data?.error || error.response?.data?.message || "Login failed",
+          error: err.response?.data?.error || err.response?.data?.message || "Login failed",
           isLoading: false,
           requiresTwoFactor: false,
         });
@@ -118,9 +135,10 @@ export const useAuthStore = create<AuthState>()(
           requiresTwoFactor: false,
           twoFactorRememberMe: false,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string; message?: string } } };
         set({
-          error: error.response?.data?.error || error.response?.data?.message || "2FA verification failed",
+          error: err.response?.data?.error || err.response?.data?.message || "2FA verification failed",
           isLoading: false,
         });
         throw error;
@@ -141,9 +159,10 @@ export const useAuthStore = create<AuthState>()(
           requiresTwoFactor: false,
           twoFactorRememberMe: false,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string; message?: string } } };
         set({
-          error: error.response?.data?.error || error.response?.data?.message || "Recovery code verification failed",
+          error: err.response?.data?.error || err.response?.data?.message || "Recovery code verification failed",
           isLoading: false,
         });
         throw error;

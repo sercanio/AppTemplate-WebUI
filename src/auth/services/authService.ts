@@ -121,39 +121,31 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
   }
   
   static async register(userData: any): Promise<any> {
-    try {
-      const transformedData = {
-        Email: userData.email || userData.Email,
-        Password: userData.password || userData.Password,
-        Username: userData.username || userData.Username,
-      };
-      
-      const response = await axios.post(
-        `${API_URL}/account/register`, 
-        transformedData, 
-        { 
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+    const transformedData = {
+      Email: userData.email || userData.Email,
+      Password: userData.password || userData.Password,
+      Username: userData.username || userData.Username,
+    };
+    
+    const response = await axios.post(
+      `${API_URL}/account/register`, 
+      transformedData, 
+      { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
         }
-      );
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+      }
+    );
+    return response.data;
   }
   
   static async logout(): Promise<void> {
-    try {
-      await axios.post(
-        `${API_URL}/account/logout`, 
-        {}, 
-        { withCredentials: true }
-      );
-    } catch (error) {
-      throw error;
-    }
+    await axios.post(
+      `${API_URL}/account/logout`, 
+      {}, 
+      { withCredentials: true }
+    );
   }
   
   static async getCurrentUser(): Promise<any> {

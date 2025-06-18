@@ -310,6 +310,73 @@
     --normal-border: var(--border);
     --normal-text: var(--foreground);
   }
+
+  /* Enhanced Loading Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 var(--color-steel-blue);
+    }
+    50% {
+      box-shadow: 0 0 0 10px transparent;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .animate-pulseGlow {
+    animation: pulseGlow 2s infinite;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* Loading States */
+  .loading-enter {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  .loading-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+  }
+
+  .loading-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .loading-exit-active {
+    opacity: 0;
+    transform: scale(1.1);
+    transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+  }
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Activity, TrendingUp, DollarSign, ShieldCheck, Shield, Key } from "lucide-react";
+import { Users, Activity, TrendingUp, ShieldCheck, Shield, Key } from "lucide-react";
 import {
   StatisticsService,
   type DashboardStatistics,
@@ -35,7 +35,6 @@ export default function Dashboard() {
           userCount: 0,
           activeSessions: 0,
           growthRate: 0,
-          revenue: 0,
         });
       } finally {
         setLoading(false);
@@ -47,14 +46,6 @@ export default function Dashboard() {
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
-  };
-
-  const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(num);
   };
 
   return (

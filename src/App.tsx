@@ -2,7 +2,6 @@ import './App.css'
 import AdminHeader from './components/admin-header'
 import AdminFooter from './components/admin-footer'
 import { Sidebar, SidebarProvider } from './components/ui/sidebar'
-import { Toaster } from "./components/ui/sonner"
 import { ThemeProvider } from "./contexts/ThemeContext"
 
 export default function App() {
@@ -12,7 +11,6 @@ export default function App() {
         <Sidebar />
         <AdminHeader />
         <AdminFooter />
-        <Toaster />
       </SidebarProvider>
     </ThemeProvider>
   );
