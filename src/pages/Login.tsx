@@ -36,9 +36,9 @@ export default function Login() {
                 const from = location.state?.from?.pathname || '/'
                 navigate(from, { replace: true })
             }
-        } catch (err: any) {
+        } catch (error: unknown) {
             // Error is handled by the auth store
-            console.error('Login error:', err)
+            console.error('Login error:', error)
         }
     }
 

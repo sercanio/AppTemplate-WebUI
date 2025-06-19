@@ -2,10 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { useAuthStore } from "./auth/store/authStore";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import "./index.css";
 import AppRouter from "./router";
 import { Toaster } from "./components/ui/sonner";
-import { BrowserRouter } from "react-router-dom";
+import "./index.css";
 
 // Initialize the app
 const initializeApp = async () => {
@@ -28,13 +27,8 @@ initializeApp().then(() => {
           expand={true}
           richColors={true}
           toastOptions={{
-            duration: 4000,
-            classNames: {
-              error: "border-l-bittersweet",
-              success: "border-l-yellow-green",
-              warning: "border-l-sunglow",
-              info: "border-l-steel-blue",
-            },
+            duration: 3000,
+            closeButton: true
           }}
         />
       </ThemeProvider>

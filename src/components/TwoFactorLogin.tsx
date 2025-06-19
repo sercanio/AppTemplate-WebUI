@@ -36,7 +36,7 @@ export function TwoFactorLogin({ onBack }: TwoFactorLoginProps) {
       // Redirect after successful 2FA
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch {
       toast.error('Verification failed. Please check your code and try again.');
     }
   };

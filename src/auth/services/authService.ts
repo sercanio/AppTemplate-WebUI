@@ -20,6 +20,16 @@ export interface LoginWithRecoveryCodeRequest {
   recoveryCode: string;
 }
 
+export interface RegisterUserData {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+}
+
 export class AuthService {  static async initializeAntiForgeryToken(): Promise<void> {
     try {
       const response = await axios.get(
@@ -62,7 +72,7 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login failed:", error);
       throw error;
     }
@@ -90,7 +100,7 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("2FA login failed:", error);
       throw error;
     }
@@ -114,30 +124,29 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Recovery code login failed:", error);
       throw error;
     }
   }
   
-  static async register(userData: any): Promise<any> {
-    const transformedData = {
-      Email: userData.email || userData.Email,
-      Password: userData.password || userData.Password,
-      Username: userData.username || userData.Username,
-    };
-    
-    const response = await axios.post(
-      `${API_URL}/account/register`, 
-      transformedData, 
-      { 
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+  static async register(userData: RegisterUserData): Promise<RegisterResponse> {
+    try {
+      const response = await axios.post<RegisterResponse>(
+        `${API_URL}/Account/register`, 
+        userData, 
+        { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      }
-    );
-    return response.data;
+      );
+      return response.data;
+    } catch (error: unknown) {
+      console.error("Registration failed:", error);
+      throw error;
+    }
   }
   
   static async logout(): Promise<void> {
@@ -148,14 +157,14 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
     );
   }
   
-  static async getCurrentUser(): Promise<any> {
+  static async getCurrentUser(): Promise<unknown> {
     try {
       const response = await axios.get(
         `${API_URL}/account/me`, 
         { withCredentials: true }
       );
       return response.data;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
