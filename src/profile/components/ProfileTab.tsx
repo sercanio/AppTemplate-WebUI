@@ -1,26 +1,32 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { Textarea } from "../../components/ui/textarea";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Loader2, AlertCircle, CheckCircle2, Mail, Link2, Copy, ExternalLink, User } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react";
 import { useProfile } from "../context/profileContext";
-import { SocialMediaLinks } from "./SocialMediaLinks";
 import { ProfilePicture } from "./ProfilePicture";
-import { AccountService } from "../services/accountService";
+import { useAuthStore } from "../../auth/store/authStore";
 import { themedToast } from "../../lib/toast";
+import { parseError } from "../../lib/utils";
 
 export function ProfileTab() {
-  const { state, setIsEditing, updateProfileData, handleProfileDataUpdate } = useProfile();
-  const { isEditing, isSaving, profileData } = state;
+  const { state} =
+    useProfile();
+  const { profileData, isSaving } = state;
+  const { changeEmail } = useAuthStore();
 
   const [newEmail, setNewEmail] = useState("");
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [emailChangeSuccess, setEmailChangeSuccess] = useState(false);
   const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
-  const [showCopySuccess, setShowCopySuccess] = useState(false);
 
   // Handle email change
   const handleEmailChange = async (e: React.FormEvent) => {
@@ -37,56 +43,20 @@ export function ProfileTab() {
       return;
     }
 
-    setIsChangingEmail(true);
     setEmailChangeSuccess(false);
     setEmailChangeError(null);
 
     try {
-      await AccountService.changeEmail({ newEmail });
+      await changeEmail({ newEmail });
       setEmailChangeSuccess(true);
       setNewEmail("");
       themedToast.success("Email change request sent", {
-        description: "Please check your new email to confirm the change"
+        description: "Please check your new email to confirm the change",
       });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.response?.data?.title || "Failed to change email";
-      setEmailChangeError(errorMessage);
-      themedToast.error("Failed to change email", {
-        description: errorMessage
-      });
-    } finally {
-      setIsChangingEmail(false);
-    }
-  };
-
-  // Function to copy public profile URL to clipboard
-  const copyProfileUrl = () => {
-    const url = `${window.location.origin}/user/${profileData.userName}`;
-    navigator.clipboard.writeText(url);
-    setShowCopySuccess(true);
-    themedToast.success("URL copied to clipboard");
-    setTimeout(() => setShowCopySuccess(false), 3000);
-  };
-
-  // Handle profile update using context method
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!isEditing) return;
-
-    try {
-      await handleProfileDataUpdate({
-        biography: profileData.biography,
-        socialMediaLinks: profileData.socialMediaLinks || [],
-      });
-
-      setIsEditing(false);
-      themedToast.success("Profile updated successfully");
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      themedToast.error("Failed to update profile", {
-        description: "Please try again"
-      });
+      const message = parseError(error);
+      setEmailChangeError(message);
+      themedToast.error("Failed to change email", { description: message });
     }
   };
 
@@ -109,7 +79,8 @@ export function ProfileTab() {
             <Alert className="mb-6 bg-green-50 border-green-200 text-green-800">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertDescription>
-                Email change request sent! Please check your new email to confirm the change.
+                Email change request sent! Please check your new email to
+                confirm the change.
               </AlertDescription>
             </Alert>
           )}
@@ -140,7 +111,7 @@ export function ProfileTab() {
                 placeholder="Enter your new email address"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                disabled={isChangingEmail}
+                disabled={isSaving}
                 required
               />
             </div>
@@ -148,9 +119,9 @@ export function ProfileTab() {
             <Button
               type="submit"
               className="bg-gradient-to-r from-steel-blue to-yellow-green hover:opacity-90"
-              disabled={isChangingEmail || !newEmail}
+              disabled={isSaving || !newEmail}
             >
-              {isChangingEmail ? (
+              {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting...
@@ -163,7 +134,8 @@ export function ProfileTab() {
         </CardContent>
         <CardFooter className="bg-muted/50 border-t px-6 py-3">
           <p className="text-xs text-muted-foreground">
-            You will need to confirm your new email address before the change takes effect.
+            You will need to confirm your new email address before the change
+            takes effect.
           </p>
         </CardFooter>
       </Card>

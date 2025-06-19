@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import type { User } from "../../auth/store/authStore";
 import { useAuthStore } from "../../auth/store/authStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AccountService } from "../services/accountService";
 import { ProfilePictureService } from "../services/profilePictureService";
+import { themedToast } from "../../lib/toast";
+import { parseError } from "../../lib/utils";
 
+// --- State Types ---
 type ProfileState = {
   isEditing: boolean;
   isSaving: boolean;
@@ -35,20 +38,18 @@ type ProfileContextType = {
   state: ProfileState;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  setIsEditing: (value: boolean) => void;
-  setIsSaving: (value: boolean) => void;
-  setSaveSuccess: (value: boolean) => void;
-  setSaveError: (value: string | null) => void;
   updateProfileData: (data: Partial<ProfileState["profileData"]>) => void;
   updatePasswordData: (data: Partial<ProfileState["passwordData"]>) => void;
-  updateNotificationSettings: (data: Partial<ProfileState["notificationSettings"]>) => void;
+  updateNotificationSettings: (
+    data: Partial<ProfileState["notificationSettings"]>
+  ) => void;
   resetPasswordForm: () => void;
   handlePasswordChange: (e: React.FormEvent) => Promise<void>;
   handleNotificationUpdate: (e: React.FormEvent) => Promise<void>;
-  handleProfileDataUpdate: (data: {}) => Promise<void>;
-  getInitials: () => string;
+  handleProfileDataUpdate: (data: Partial<ProfileState["profileData"]>) => Promise<void>;
   updateProfilePicture: (file: File) => Promise<void>;
   deleteProfilePicture: () => Promise<void>;
+  getInitials: () => string;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -72,8 +73,6 @@ export function ProfileProvider({
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTabFromPath());
-
-  // Initialize state with user data
   const [state, setState] = useState<ProfileState>({
     isEditing: false,
     isSaving: false,
@@ -85,11 +84,7 @@ export function ProfileProvider({
       location: user?.location || "",
       profilePictureUrl: user?.profilePictureUrl || null,
     },
-    passwordData: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
+    passwordData: { currentPassword: "", newPassword: "", confirmPassword: "" },
     notificationSettings: {
       emailNotifications: user?.notificationPreferences?.emailNotification ?? true,
       inAppNotifications: user?.notificationPreferences?.inAppNotification ?? true,
@@ -100,78 +95,25 @@ export function ProfileProvider({
     },
   });
 
-  // Update notification settings when user changes
   useEffect(() => {
-    if (user?.notificationPreferences) {
-      setState((prev) => ({
-        ...prev,
-        notificationSettings: {
-          ...prev.notificationSettings,
-          emailNotifications: user.notificationPreferences.emailNotification,
-          inAppNotifications: user.notificationPreferences.inAppNotification,
-          pushNotifications: user.notificationPreferences.pushNotification,
-        },
-      }));
-    }
-  }, [user?.notificationPreferences]);
+    setActiveTab(getInitialTabFromPath());
+  }, [location.pathname]);
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === "profile") {
-      navigate("/profile");
-    } else {
-      navigate(`/profile/${tab}`);
-    }
-  };
+  // State updaters
+  const setIsSaving = (value: boolean) => setState(prev => ({ ...prev, isSaving: value }));
+  const setSaveSuccess = (value: boolean) => setState(prev => ({ ...prev, saveSuccess: value }));
+  const setSaveError = (error: string | null) => setState(prev => ({ ...prev, saveError: error }));
+  const updateProfileData = (data: Partial<ProfileState['profileData']>) =>
+    setState(prev => ({ ...prev, profileData: { ...prev.profileData, ...data } }));
+  const updatePasswordData = (data: Partial<ProfileState['passwordData']>) =>
+    setState(prev => ({ ...prev, passwordData: { ...prev.passwordData, ...data } }));
+  const updateNotificationSettings = (
+    data: Partial<ProfileState['notificationSettings']>
+  ) => setState(prev => ({ ...prev, notificationSettings: { ...prev.notificationSettings, ...data } }));
+  const resetPasswordForm = () =>
+    setState(prev => ({ ...prev, passwordData: { currentPassword: "", newPassword: "", confirmPassword: "" } }));
 
-  const setIsEditing = (value: boolean) => {
-    setState((prev) => ({ ...prev, isEditing: value }));
-  };
-
-  const setIsSaving = (value: boolean) => {
-    setState((prev) => ({ ...prev, isSaving: value }));
-  };
-
-  const setSaveSuccess = (value: boolean) => {
-    setState((prev) => ({ ...prev, saveSuccess: value }));
-  };
-
-  const setSaveError = (value: string | null) => {
-    setState((prev) => ({ ...prev, saveError: value }));
-  };
-
-  const updateProfileData = (data: Partial<ProfileState["profileData"]>) => {
-    setState((prev) => ({
-      ...prev,
-      profileData: { ...prev.profileData, ...data },
-    }));
-  };
-
-  const updatePasswordData = (data: Partial<ProfileState["passwordData"]>) => {
-    setState((prev) => ({
-      ...prev,
-      passwordData: { ...prev.passwordData, ...data },
-    }));
-  };
-
-  const updateNotificationSettings = (data: Partial<ProfileState["notificationSettings"]>) => {
-    setState((prev) => ({
-      ...prev,
-      notificationSettings: { ...prev.notificationSettings, ...data },
-    }));
-  };
-
-  const resetPasswordForm = () => {
-    setState((prev) => ({
-      ...prev,
-      passwordData: {
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      },
-    }));
-  };
-
+  // Handlers
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -190,11 +132,13 @@ export function ProfileProvider({
         newPassword: state.passwordData.newPassword,
         confirmPassword: state.passwordData.confirmPassword,
       });
-
       setSaveSuccess(true);
       resetPasswordForm();
-    } catch (error: any) {
-      setSaveError(error.response?.data?.message || "Failed to update password. Please try again.");
+      themedToast.success("Password updated successfully");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
@@ -207,24 +151,27 @@ export function ProfileProvider({
     setSaveError(null);
 
     try {
-      const notificationData = {
-        inAppNotification: state.notificationSettings.inAppNotifications,
+      await AccountService.updateNotificationPreferences({
         emailNotification: state.notificationSettings.emailNotifications,
+        inAppNotification: state.notificationSettings.inAppNotifications,
         pushNotification: state.notificationSettings.pushNotifications,
-      };
-
-      await AccountService.updateNotificationPreferences(notificationData);
+      });
       setSaveSuccess(true);
-    } catch (error: any) {
-      setSaveError(error.response?.data?.error || "Failed to update notification settings. Please try again.");
+      themedToast.success("Notification preferences updated");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleProfileDataUpdate = async (data: {}) => {
+  const handleProfileDataUpdate = async (data: Partial<ProfileState['profileData']>) => {
     if (!user?.id) {
-      setSaveError("User ID not found");
+      const msg = "User ID not found";
+      setSaveError(msg);
+      themedToast.error(msg);
       return;
     }
 
@@ -236,16 +183,14 @@ export function ProfileProvider({
       await AccountService.updateUserProfile(user.id, data);
       updateProfileData(data);
       setSaveSuccess(true);
-    } catch (error: any) {
-      setSaveError(error.response?.data?.message || "Failed to update profile data. Please try again.");
+      themedToast.success("Profile updated successfully");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const getInitials = () => {
-    if (!user?.userName) return "U";
-    return user.userName.charAt(0).toUpperCase();
   };
 
   const updateProfilePicture = async (file: File) => {
@@ -255,19 +200,14 @@ export function ProfileProvider({
 
     try {
       const result = await ProfilePictureService.uploadProfilePicture(file);
-
-      setState((prev) => ({
-        ...prev,
-        profileData: {
-          ...prev.profileData,
-          profilePictureUrl: result.profilePictureUrl,
-        },
-      }));
-
+      updateProfileData({ profilePictureUrl: result.profilePictureUrl });
       updateUser({ profilePictureUrl: result.profilePictureUrl });
       setSaveSuccess(true);
-    } catch (error: any) {
-      setSaveError(error.response?.data?.error || "Failed to update profile picture. Please try again.");
+      themedToast.success("Profile picture updated");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
@@ -280,38 +220,33 @@ export function ProfileProvider({
 
     try {
       await ProfilePictureService.deleteProfilePicture();
-
-      setState((prev) => ({
-        ...prev,
-        profileData: {
-          ...prev.profileData,
-          profilePictureUrl: null,
-        },
-      }));
-
+      updateProfileData({ profilePictureUrl: null });
       updateUser({ profilePictureUrl: null });
       setSaveSuccess(true);
-    } catch (error: any) {
-      setSaveError(error.response?.data?.error || "Failed to delete profile picture. Please try again.");
+      themedToast.success("Profile picture deleted");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
   };
 
-  useEffect(() => {
-    setActiveTab(getInitialTabFromPath());
-  }, [location.pathname]);
+  const getInitials = () => {
+    if (!user?.userName) return "U";
+    return user.userName.charAt(0).toUpperCase();
+  };
 
   return (
     <ProfileContext.Provider
       value={{
         state,
         activeTab,
-        setActiveTab: handleTabChange,
-        setIsEditing,
-        setIsSaving,
-        setSaveSuccess,
-        setSaveError,
+        setActiveTab: tab => {
+          setActiveTab(tab);
+          navigate(tab === "profile" ? "/profile" : `/profile/${tab}`);
+        },
         updateProfileData,
         updatePasswordData,
         updateNotificationSettings,
@@ -319,9 +254,9 @@ export function ProfileProvider({
         handlePasswordChange,
         handleNotificationUpdate,
         handleProfileDataUpdate,
-        getInitials,
         updateProfilePicture,
         deleteProfilePicture,
+        getInitials,
       }}
     >
       {children}
@@ -329,10 +264,8 @@ export function ProfileProvider({
   );
 }
 
-export const useProfile = () => {
+export const useProfile = (): ProfileContextType => {
   const context = useContext(ProfileContext);
-  if (context === undefined) {
-    throw new Error("useProfile must be used within a ProfileProvider");
-  }
+  if (!context) throw new Error("useProfile must be used within a ProfileProvider");
   return context;
 };

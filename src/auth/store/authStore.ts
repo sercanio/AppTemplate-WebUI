@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { AuthService, type RegisterUserData } from '../services/authService';
+import { AccountService, type NotificationPreferences, type PasswordChangeData, type EmailChangeData } from '../../profile/services/accountService';
 
 export type User = {
   id: string;
@@ -8,7 +9,7 @@ export type User = {
   location?: string;
   profilePictureUrl: string | null;
   emailConfirmed?: boolean;
-  notificationPreferences: any;
+  notificationPreferences: NotificationPreferences;
 };
 
 interface AuthState {
@@ -26,6 +27,12 @@ interface AuthState {
   register: (userData: RegisterUserData) => Promise<unknown>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  // Account management methods
+  changePassword: (passwordData: PasswordChangeData) => Promise<void>;
+  changeEmail: (emailData: EmailChangeData) => Promise<void>;
+  updateNotificationPreferences: (preferences: NotificationPreferences) => Promise<void>;
+  requestEmailVerification: (email: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -188,6 +195,46 @@ export const useAuthStore = create<AuthState>()(
       set((state) => ({
         user: state.user ? { ...state.user, ...userData } : null
       }));
-    }
+    },
+
+    // Account management methods
+    changePassword: async (passwordData: PasswordChangeData) => {
+      await AccountService.changePassword(passwordData);
+    },
+
+    changeEmail: async (emailData: EmailChangeData) => {
+      await AccountService.changeEmail(emailData);
+    },
+
+    updateNotificationPreferences: async (preferences: NotificationPreferences) => {
+      await AccountService.updateNotificationPreferences(preferences);
+      // Update user state to reflect new preferences
+      const { user } = get();
+      if (user) {
+        set({
+          user: {
+            ...user,
+            notificationPreferences: preferences
+          }
+        });
+      }
+    },
+
+    requestEmailVerification: async (email: string) => {
+      await AccountService.requestEmailVerification(email);
+    },
+
+    deleteAccount: async (password: string) => {
+      await AccountService.deleteAccount({ password });
+      // Clear user state after account deletion
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+        requiresTwoFactor: false,
+        twoFactorRememberMe: false,
+      });
+    },
   })
 );

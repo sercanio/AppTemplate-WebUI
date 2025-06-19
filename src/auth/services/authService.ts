@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { User } from '../store/authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5070/api/v1';
 
@@ -157,7 +158,7 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
     );
   }
   
-  static async getCurrentUser(): Promise<unknown> {
+  static async getCurrentUser(): Promise<User | null> {
     try {
       const response = await axios.get(
         `${API_URL}/account/me`, 

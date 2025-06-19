@@ -1,15 +1,25 @@
 import React, { useState, useRef } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../components/ui/avatar";
 import { Loader2, AlertCircle, Upload, Trash2, Camera } from "lucide-react";
 import { useProfile } from "../context/profileContext";
 import { compressImage, validateImageFile } from "../utils/imageUtils";
-import { themedToast } from "../../lib/toast";
 
 export function ProfilePicture() {
-  const { state, updateProfilePicture, deleteProfilePicture, getInitials } = useProfile();
+  const { state, updateProfilePicture, deleteProfilePicture, getInitials } =
+    useProfile();
   const { isSaving, saveError, profileData } = state;
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -30,36 +40,25 @@ export function ProfilePicture() {
       return;
     }
 
-    try {
-      // Create preview
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
 
-      // Compress image
-      const compressedFile = await compressImage(file, 3);
+    // Compress image
+    const compressedFile = await compressImage(file, 3);
 
-      // Upload to server
-      await updateProfilePicture(compressedFile);
+    // Upload to server
+    await updateProfilePicture(compressedFile);
 
-      // Clean up preview URL
-      URL.revokeObjectURL(objectUrl);
-      setPreviewUrl(null);
-      
-      themedToast.success("Profile picture updated successfully");
-    } catch (error) {
-      setUploadError("Failed to process image. Please try again.");
-      themedToast.error("Failed to update profile picture");
-    }
+    // Clean up preview URL
+    URL.revokeObjectURL(objectUrl);
+    setPreviewUrl(null);
   };
 
   const handleDeleteClick = async () => {
-    if (window.confirm("Are you sure you want to delete your profile picture?")) {
-      try {
-        await deleteProfilePicture();
-        themedToast.success("Profile picture deleted successfully");
-      } catch (error) {
-        themedToast.error("Failed to delete profile picture");
-      }
+    if (
+      window.confirm("Are you sure you want to delete your profile picture?")
+    ) {
+      await deleteProfilePicture();
     }
   };
 
@@ -81,7 +80,10 @@ export function ProfilePicture() {
           {/* Avatar with current profile picture or preview */}
           <div className="relative group">
             <Avatar className="h-32 w-32 border-2 border-border">
-              <AvatarImage src={previewUrl || profileData.profilePictureUrl || undefined} alt={profileData.userName} />
+              <AvatarImage
+                src={previewUrl || profileData.profilePictureUrl || undefined}
+                alt={profileData.userName}
+              />
               <AvatarFallback className="text-3xl bg-gradient-to-r from-steel-blue to-yellow-green text-white">
                 {getInitials()}
               </AvatarFallback>
@@ -97,12 +99,12 @@ export function ProfilePicture() {
           </div>
 
           {/* Hidden file input */}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept="image/*" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
           />
 
           {/* Action buttons */}
@@ -114,7 +116,11 @@ export function ProfilePicture() {
               onClick={triggerFileInput}
               disabled={isSaving}
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               Upload
             </Button>
 
