@@ -5,11 +5,9 @@ export type User = {
   id: string;
   email: string;
   userName?: string;
-  biography?: string;
   location?: string;
   profilePictureUrl: string | null;
-  socialMediaLinks?: any[];
-  isEmailConfirmed?: boolean;
+  emailConfirmed?: boolean;
   notificationPreferences: any;
 };
 

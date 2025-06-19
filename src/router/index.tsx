@@ -8,6 +8,7 @@ import ErrorPage from '../pages/ErrorPage'
 import ProtectedRoute from '../components/auth/ProtectedRoute'
 import PublicRoute from '../components/auth/PublicRoute'
 import Roles from '../pages/Roles'
+import Profile from '../pages/Profile'
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,23 @@ const router = createBrowserRouter([
       {
         path: 'settings',
         element: <Settings />,
+      },
+      // Profile routes with sub-paths for tabs
+      {
+        path: 'profile',
+        element: <Profile />,
+      },
+      {
+        path: 'profile/security',
+        element: <Profile />,
+      },
+      {
+        path: 'profile/notifications',
+        element: <Profile />,
+      },
+      {
+        path: 'profile/settings',
+        element: <Profile />,
       },
     ],
   },
