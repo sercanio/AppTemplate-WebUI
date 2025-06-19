@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { Users, Activity, TrendingUp, DollarSign, ShieldCheck, Shield } from "lucide-react";
+import { Users, Activity, TrendingUp, ShieldCheck, Shield, Key } from "lucide-react";
 import {
   StatisticsService,
   type DashboardStatistics,
 } from "../services/statisticsService";
 import { Skeleton } from "../components/ui/skeleton";
 import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 
 export default function Dashboard() {
   const [statistics, setStatistics] = useState<DashboardStatistics | null>(
@@ -22,13 +23,18 @@ export default function Dashboard() {
         setStatistics(stats);
       } catch (error) {
         console.error("Failed to load dashboard statistics:", error);
-        toast.error("Failed to load dashboard statistics");
+        toast.error("Failed to load dashboard statistics", {
+          description: "Unable to fetch the latest data from the server",
+          action: {
+            label: "Retry",
+            onClick: () => window.location.reload(),
+          },
+        });
         // Set fallback statistics
         setStatistics({
           userCount: 0,
           activeSessions: 0,
           growthRate: 0,
-          revenue: 0,
         });
       } finally {
         setLoading(false);
@@ -42,14 +48,6 @@ export default function Dashboard() {
     return new Intl.NumberFormat().format(num);
   };
 
-  const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(num);
-  };
-
   return (
     <div className="p-2 md:p-6 space-y-6">
       <div>
@@ -59,7 +57,7 @@ export default function Dashboard() {
         </p>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Total Users Card */}
         <div className="rounded-lg border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
@@ -133,26 +131,6 @@ export default function Dashboard() {
             <TrendingUp className={`h-8 w-8 ${
               (statistics?.growthRate || 0) >= 0 ? 'text-yellow-green' : 'text-bittersweet'
             }`} />
-          </div>
-        </div>
-        
-        {/* Revenue Card */}
-        <div className="rounded-lg border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              {loading ? (
-                <>
-                  <Skeleton className="h-8 w-24 mb-2" />
-                  <Skeleton className="h-4 w-16" />
-                </>
-              ) : (
-                <>
-                  <h3 className="text-2xl font-bold">{formatCurrency(statistics?.revenue || 0)}</h3>
-                  <p className="text-sm text-muted-foreground">Revenue</p>
-                </>
-              )}
-            </div>
-            <DollarSign className="h-8 w-8 text-sunglow" />
           </div>
         </div>
       </div>
@@ -352,6 +330,192 @@ export default function Dashboard() {
                   <span className="text-muted-foreground">Status:</span>
                   <span className="font-medium text-yellow-green">Healthy</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Role & Permission Analytics */}
+      {!loading && statistics?.roleStats && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Role & Permission Analytics</h2>
+            <p className="text-muted-foreground">
+              Overview of roles, permissions, and access distribution in your system
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* Total Roles */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Roles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{statistics.roleStats.totalRoles}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Shield className="h-3 w-3" />
+                  Active system roles
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total Permissions */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Permissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{statistics.roleStats.totalPermissions}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Key className="h-3 w-3" />
+                  Available permissions
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Average Permissions per Role */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Avg Permissions/Role</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Math.round(
+                    Object.values(statistics.roleStats.permissionsPerRole).reduce((a, b) => a + b, 0) / 
+                    statistics.roleStats.totalRoles
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
+                  Permission density
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Most Permissive Role */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Most Permissive</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {Object.entries(statistics.roleStats.permissionsPerRole)
+                    .sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <ShieldCheck className="h-3 w-3" />
+                  {Object.entries(statistics.roleStats.permissionsPerRole)
+                    .sort(([,a], [,b]) => b - a)[0]?.[1] || 0} permissions
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Permissions per Role */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-steel-blue" />
+                  Permissions per Role
+                </CardTitle>
+                <CardDescription>
+                  Number of permissions assigned to each role
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(statistics.roleStats.permissionsPerRole)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([role, count]) => {
+                      const percentage = (count / statistics.roleStats!.totalPermissions) * 100;
+                      return (
+                        <div key={role} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{role}</span>
+                            <span className="text-muted-foreground">{count} permissions</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-steel-blue h-2 rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Users per Role */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-yellow-green" />
+                  Users per Role
+                </CardTitle>
+                <CardDescription>
+                  Distribution of users across different roles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(statistics.roleStats.usersPerRole)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([role, count]) => {
+                      const totalUsers = Object.values(statistics.roleStats!.usersPerRole).reduce((a, b) => a + b, 0);
+                      const percentage = totalUsers > 0 ? (count / totalUsers) * 100 : 0;
+                      return (
+                        <div key={role} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{role}</span>
+                            <span className="text-muted-foreground">{count} users</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-yellow-green h-2 rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Permissions by Feature */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-sunglow" />
+                Permissions by Feature
+              </CardTitle>
+              <CardDescription>
+                Breakdown of permissions organized by system features
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(statistics.roleStats.permissionsByFeature)
+                  .sort(([,a], [,b]) => b - a)
+                  .map(([feature, count]) => (
+                    <div key={feature} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-sunglow/10 flex items-center justify-center">
+                          <span className="text-xs font-bold text-sunglow capitalize">
+                            {feature.charAt(0)}
+                          </span>
+                        </div>
+                        <span className="font-medium capitalize">{feature}</span>
+                      </div>
+                      <Badge variant="secondary">{count}</Badge>
+                    </div>
+                  ))}
               </div>
             </CardContent>
           </Card>

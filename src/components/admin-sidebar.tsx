@@ -108,13 +108,12 @@ export function AdminSidebar() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <a
-                href={`/user/${user?.userName}`}
-                target="_blank"
-                className="text-sm font-medium truncate hover:text-primary transition-colors"
+              <Link
+                to="/profile"
+                className="text-sm font-medium truncate hover:text-primary transition-colors block"
               >
                 {user?.userName || "Admin User"}
-              </a>
+              </Link>
               <p className="text-xs text-muted-foreground truncate">
                 {user?.email}
               </p>

@@ -21,13 +21,21 @@ export interface AuthenticationStatistics {
   totalUsersWithAuthenticator: number;
 }
 
+export interface RoleStatistics {
+  totalRoles: number;
+  totalPermissions: number;
+  permissionsPerRole: Record<string, number>;
+  usersPerRole: Record<string, number>;
+  permissionsByFeature: Record<string, number>;
+}
+
 export interface DashboardStatistics {
   userCount: number;
   activeSessions?: number;
   growthRate?: number;
-  revenue?: number;
   userTrends?: UserTrendsResponse;
   authStats?: AuthenticationStatistics;
+  roleStats?: RoleStatistics;
 }
 
 export type TrendsPeriod = 'week' | 'month' | '3months' | '6months' | 'year';
@@ -85,24 +93,41 @@ export class StatisticsService {
   }
 
   /**
+   * Get role and permission statistics
+   */
+  static async getRoleStatistics(): Promise<RoleStatistics> {
+    try {
+      const response = await axios.get<RoleStatistics>(`${API_URL}/Statistics/roles`, {
+        withCredentials: true,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch role statistics:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get comprehensive dashboard statistics
    */
   static async getDashboardStatistics(period: TrendsPeriod = 'month'): Promise<DashboardStatistics> {
     try {
       // Fetch all statistics in parallel
-      const [userCount, userTrends, authStats] = await Promise.all([
+      const [userCount, userTrends, authStats, roleStats] = await Promise.all([
         this.getUsersCount(),
         this.getUserTrends(period),
         this.getAuthenticationStats(),
+        this.getRoleStatistics(),
       ]);
       
       return {
         userCount,
-        activeSessions: authStats.activeSessions, // Use real data instead of estimation
+        activeSessions: authStats.activeSessions,
         growthRate: userTrends.growthPercentage,
-        revenue: 45231, // Mock revenue until endpoint is available
         userTrends,
         authStats,
+        roleStats,
       };
     } catch (error) {
       console.error('Failed to fetch dashboard statistics:', error);
@@ -111,7 +136,6 @@ export class StatisticsService {
         userCount: 0,
         activeSessions: 0,
         growthRate: 0,
-        revenue: 0,
       };
     }
   }

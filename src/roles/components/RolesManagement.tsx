@@ -137,14 +137,28 @@ export default function RolesManagement() {
       // Update local state - use the full permission object with name
       if (isGranted) {
         setRolePermissions(prev => [...prev, permission]);
+        toast.success(`Permission granted`, {
+          description: `"${permission.name}" has been added to ${selectedRole.name}`,
+        });
       } else {
         setRolePermissions(prev => prev.filter(p => p.name !== permission.name));
+        toast.success(`Permission revoked`, {
+          description: `"${permission.name}" has been removed from ${selectedRole.name}`,
+          action: {
+            label: "Undo",
+            onClick: () => handlePermissionToggle(permission, true),
+          },
+        });
       }
-      
-      toast.success("Permission updated successfully");
     } catch (error) {
       console.error("Failed to update permission:", error);
-      toast.error("Failed to update permission");
+      toast.error("Failed to update permission", {
+        description: "There was an error updating the permission. Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => handlePermissionToggle(permission, isGranted),
+        },
+      });
     } finally {
       setUpdatingPermission(null);
     }
@@ -152,20 +166,39 @@ export default function RolesManagement() {
 
   const handleCreateRole = async () => {
     if (!newRoleName.trim()) {
-      toast.error("Role name is required");
+      toast.error("Role name is required", {
+        description: "Please enter a valid role name"
+      });
       return;
     }
 
     try {
       setCreating(true);
+      toast.loading("Creating role...", { id: "create-role" });
+      
       const newRole = await RolesManagementService.createRole({ name: newRoleName });
       setRoles(prev => [...prev, newRole]);
       setNewRoleName("");
       setIsCreateModalOpen(false);
-      toast.success("Role created successfully");
+      
+      toast.success(`Role created successfully`, {
+        id: "create-role",
+        description: `"${newRole.name}" has been added to the system`,
+        action: {
+          label: "View",
+          onClick: () => handleRoleSelect(newRole),
+        },
+      });
     } catch (error) {
       console.error("Failed to create role:", error);
-      toast.error("Failed to create role");
+      toast.error("Failed to create role", {
+        id: "create-role",
+        description: "There was an error creating the role. Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => handleCreateRole(),
+        },
+      });
     } finally {
       setCreating(false);
     }
@@ -174,8 +207,12 @@ export default function RolesManagement() {
   const handleEditRole = async () => {
     if (!roleToEdit || !editRoleName.trim()) return;
 
+    const originalName = roleToEdit.name;
+    
     try {
       setUpdating(true);
+      toast.loading("Updating role...", { id: "update-role" });
+      
       const updatedRole = await RolesManagementService.updateRole(roleToEdit.id, { name: editRoleName });
       setRoles(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
       if (selectedRole?.id === roleToEdit.id) {
@@ -184,10 +221,32 @@ export default function RolesManagement() {
       setIsEditModalOpen(false);
       setRoleToEdit(null);
       setEditRoleName("");
-      toast.success("Role updated successfully");
+      
+      toast.success(`Role updated successfully`, {
+        id: "update-role",
+        description: `"${originalName}" has been renamed to "${updatedRole.name}"`,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            await RolesManagementService.updateRole(updatedRole.id, { name: originalName });
+            setRoles(prev => prev.map(role => role.id === updatedRole.id ? { ...role, name: originalName } : role));
+            if (selectedRole?.id === updatedRole.id) {
+              setSelectedRole({ ...selectedRole, name: originalName });
+            }
+            toast.success("Role name reverted");
+          },
+        },
+      });
     } catch (error) {
       console.error("Failed to update role:", error);
-      toast.error("Failed to update role");
+      toast.error("Failed to update role", {
+        id: "update-role",
+        description: "There was an error updating the role. Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => handleEditRole(),
+        },
+      });
     } finally {
       setUpdating(false);
     }
@@ -196,8 +255,12 @@ export default function RolesManagement() {
   const handleDeleteRole = async () => {
     if (!roleToDelete) return;
 
+    const deletedRoleName = roleToDelete.name;
+    
     try {
       setDeleting(true);
+      toast.loading("Deleting role...", { id: "delete-role" });
+      
       await RolesManagementService.deleteRole(roleToDelete.id);
       setRoles(prev => prev.filter(role => role.id !== roleToDelete.id));
       if (selectedRole?.id === roleToDelete.id) {
@@ -206,10 +269,21 @@ export default function RolesManagement() {
       }
       setIsDeleteDialogOpen(false);
       setRoleToDelete(null);
-      toast.success("Role deleted successfully");
+      
+      toast.success(`Role deleted`, {
+        id: "delete-role",
+        description: `"${deletedRoleName}" has been permanently removed from the system`,
+      });
     } catch (error) {
       console.error("Failed to delete role:", error);
-      toast.error("Failed to delete role");
+      toast.error("Failed to delete role", {
+        id: "delete-role",
+        description: "There was an error deleting the role. Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => handleDeleteRole(),
+        },
+      });
     } finally {
       setDeleting(false);
     }

@@ -1,6 +1,35 @@
 import axios from 'axios';
+import type { User } from '../store/authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5070/api/v1';
+
+export interface LoginResponse {
+  message: string;
+}
+
+export interface TwoFactorRequiredResponse {
+  message: "Two-factor authentication required.";
+}
+
+export interface LoginWith2faRequest {
+  twoFactorCode: string;
+  rememberMe: boolean;
+  rememberMachine: boolean;
+}
+
+export interface LoginWithRecoveryCodeRequest {
+  recoveryCode: string;
+}
+
+export interface RegisterUserData {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+}
 
 export class AuthService {  static async initializeAntiForgeryToken(): Promise<void> {
     try {
@@ -22,39 +51,91 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
     }
   }
   
-  static async login(loginIdentifier: string, password: string, rememberMe: boolean = false): Promise<any> {
+  static async login(
+    loginIdentifier: string,
+    password: string,
+    rememberMe: boolean = false
+  ): Promise<LoginResponse> {
     try {
-      const response = await axios.post(
-        `${API_URL}/Account/login`, 
-        { 
-          LoginIdentifier: loginIdentifier,
-          Password: password,
-          RememberMe: rememberMe
-        }, 
-        { 
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/login`,
+        {
+          loginIdentifier,
+          password,
+          rememberMe,
+        },
+        {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
+
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("Login failed:", error);
+      throw error;
+    }
+  }
+
+  static async loginWith2fa(
+    twoFactorCode: string,
+    rememberMe: boolean = false,
+    rememberMachine: boolean = false
+  ): Promise<LoginResponse> {
+    try {
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/loginwith2fa`,
+        {
+          twoFactorCode,
+          rememberMe,
+          rememberMachine,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      console.error("2FA login failed:", error);
+      throw error;
+    }
+  }
+
+  static async loginWithRecoveryCode(
+    recoveryCode: string
+  ): Promise<LoginResponse> {
+    try {
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/Account/loginwithrecoverycode`,
+        {
+          recoveryCode,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      console.error("Recovery code login failed:", error);
       throw error;
     }
   }
   
-  static async register(userData: any): Promise<any> {
+  static async register(userData: RegisterUserData): Promise<RegisterResponse> {
     try {
-      const transformedData = {
-        Email: userData.email || userData.Email,
-        Password: userData.password || userData.Password,
-        Username: userData.username || userData.Username,
-      };
-      
-      const response = await axios.post(
-        `${API_URL}/account/register`, 
-        transformedData, 
+      const response = await axios.post<RegisterResponse>(
+        `${API_URL}/Account/register`, 
+        userData, 
         { 
           withCredentials: true,
           headers: {
@@ -63,31 +144,28 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
         }
       );
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("Registration failed:", error);
       throw error;
     }
   }
   
   static async logout(): Promise<void> {
-    try {
-      await axios.post(
-        `${API_URL}/account/logout`, 
-        {}, 
-        { withCredentials: true }
-      );
-    } catch (error) {
-      throw error;
-    }
+    await axios.post(
+      `${API_URL}/account/logout`, 
+      {}, 
+      { withCredentials: true }
+    );
   }
   
-  static async getCurrentUser(): Promise<any> {
+  static async getCurrentUser(): Promise<User | null> {
     try {
       const response = await axios.get(
         `${API_URL}/account/me`, 
         { withCredentials: true }
       );
       return response.data;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

@@ -276,6 +276,18 @@
       opacity: 0;
     }
   }
+
+  /* Toast-specific colors */
+  --toast-success: var(--color-yellow-green);
+  --toast-error: var(--color-bittersweet);
+  --toast-warning: var(--color-sunglow);
+  --toast-info: var(--color-steel-blue);
+  
+  /* Toast backgrounds with opacity */
+  --toast-success-bg: var(--color-yellow-green-900);
+  --toast-error-bg: var(--color-bittersweet-900);
+  --toast-warning-bg: var(--color-sunglow-900);
+  --toast-info-bg: var(--color-steel-blue-900);
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
