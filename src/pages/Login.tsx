@@ -155,11 +155,10 @@ export default function Login() {
                         </form>
                     </CardContent>
                     
-                    <CardFooter className="flex justify-center border-t p-6">
-                        <p className="text-sm text-muted-foreground">
+                    <CardFooter className="flex justify-center border-t p-6">                        <p className="text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <Link 
-                                to="/auth/register" 
+                                to="/register" 
                                 className="text-steel-blue hover:text-steel-blue/80 font-medium transition-colors"
                             >
                                 Create account
