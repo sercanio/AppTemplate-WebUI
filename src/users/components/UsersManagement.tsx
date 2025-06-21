@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
@@ -42,6 +42,7 @@ import {
   Shield,
   ShieldCheck,
   UserCheck,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,195 +51,60 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { Checkbox } from "../../components/ui/checkbox";
-import { toast } from "sonner";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  UserManagementService,
-  type User,
-  type Role,
-} from "../services/usersManagementService";
-import { RolesManagementService } from "../../roles/services/rolesManagementService";
-
-type SearchField = "username";
-type SortField = "username" | "role" | "createdAt";
-type SortDirection = "asc" | "desc";
-
-interface UserWithSelection extends User {
-  isSelected?: boolean;
-}
+import { useUsersStore } from "../store/usersStore";
+import type { User } from "../services/usersManagementService";
 
 export default function UsersManagement() {
-  // State management
-  const [users, setUsers] = useState<UserWithSelection[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // Filter and search state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchField] = useState<SearchField>("username");
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [sortField, setSortField] = useState<SortField>("username");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-
-  // Load available roles
-  useEffect(() => {
-    const loadRoles = async () => {
-      try {
-        const rolesData = await RolesManagementService.getRoles(0, 100);
-        setAvailableRoles(rolesData.items);
-      } catch (error) {
-        console.error("Failed to load roles:", error);
-        toast.error("Failed to load roles", {
-          description: "There was an error loading the available roles.",
-          action: {
-            label: "Retry",
-            onClick: () => window.location.reload(),
-          },
-        });
-      }
-    };
-
-    loadRoles();
-  }, []);
-
-  // Load users with current filters
-  const loadUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      let usersData;
-
-      if (selectedRole && selectedRole !== "") {
-        // Use the dedicated role endpoint when filtering by role only
-        usersData = await UserManagementService.getUsersByRole(
-          selectedRole,
-          currentPage,
-          pageSize
-        );
-      } else if (
-        searchTerm ||
-        sortField !== "username" ||
-        sortDirection !== "asc"
-      ) {
-        // Use dynamic query for search terms or any custom sorting
-        let filter = undefined;
-
-        if (searchTerm) {
-          filter = {
-            field: "IdentityUser.UserName",
-            operator: "contains",
-            value: searchTerm,
-            isCaseSensitive: false,
-          };
-        }
-
-        const sort = searchTerm
-          ? undefined
-          : [
-              {
-                field:
-                  sortField === "username"
-                    ? "IdentityUser.UserName"
-                    : sortField,
-                dir: sortDirection as "asc" | "desc",
-              },
-            ];
-
-        usersData = await UserManagementService.getUsersWithQuery(
-          { sort, filter },
-          currentPage,
-          pageSize
-        );
-      } else {
-        // Default: get all users with default sorting
-        usersData = await UserManagementService.getUsers(currentPage, pageSize);
-      }
-
-      setUsers(usersData.items.map((user) => ({ ...user, isSelected: false })));
-      setTotalPages(usersData.totalPages);
-      setTotalCount(usersData.totalCount);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-      toast.error("Failed to load users", {
-        description: "There was an error loading the user list. Please try refreshing the page.",
-        action: {
-          label: "Retry",
-          onClick: () => loadUsers(),
-        },
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [
+  // Store state and actions
+  const {
+    users,
+    availableRoles,
+    selectedUser,
+    currentPage,
+    totalPages,
+    totalCount,
+    isLoading,
+    isSearching,
+    isEditModalOpen,
     searchTerm,
     selectedRole,
     sortField,
     sortDirection,
-    currentPage,
-    pageSize,
-  ]);
 
-  // Load users on mount and when dependencies change (excluding search)
-  useEffect(() => {
-    if (!searchTerm) {
-      loadUsers();
-    }
-  }, [
-    selectedRole,
-    sortField,
-    sortDirection,
-    currentPage,
-    pageSize,
+    // Actions
     loadUsers,
-    searchTerm,
-  ]);
+    loadAvailableRoles,
+    searchUsers,
+    filterByRole,
+    sortUsers,
+    updateUserRoles,
+    setCurrentPage,
+    setSelectedUser,
+    setEditModalOpen,
+    setSearchTerm,
+    refreshUsers,
+    isRoleUpdating,
+  } = useUsersStore();
 
-  // Search handler with proper debouncing
+  // Load data on mount
+  useEffect(() => {
+    loadAvailableRoles();
+    loadUsers();
+  }, [loadAvailableRoles, loadUsers]);
+
+  // Debounced search effect
   useEffect(() => {
     if (searchTerm) {
-      setSearching(true);
-      // Reset role filter when searching
-      setSelectedRole("");
       const debounceTimer = setTimeout(() => {
-        setCurrentPage(0);
-        loadUsers().finally(() => setSearching(false));
+        searchUsers(searchTerm);
       }, 800);
-
-      return () => {
-        clearTimeout(debounceTimer);
-      };
-    } else {
+      return () => clearTimeout(debounceTimer);
+    } else if (searchTerm === "") {
       // Clear search immediately when term is empty
-      setSearching(false);
-      setCurrentPage(0);
       loadUsers();
     }
-  }, [searchTerm, searchField, loadUsers]);
-
-  // Handle sorting
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-    setCurrentPage(0);
-  };
-
-  // Handle role filtering
-  const handleRoleFilter = (roleId: string) => {
-    setSelectedRole(roleId === "all" ? "" : roleId);
-    setCurrentPage(0);
-  };
+  }, [searchTerm, searchUsers, loadUsers]);
 
   // Handle pagination
   const handlePreviousPage = () => {
@@ -256,80 +122,18 @@ export default function UsersManagement() {
   // Handle user editing
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
-    setIsEditModalOpen(true);
+    setEditModalOpen(true);
   };
 
   const handleRoleToggle = async (roleId: string, isGranted: boolean) => {
     if (!selectedUser) return;
 
-    const role = availableRoles.find((r) => r.id === roleId);
-    if (!role) return;
+    const updateData = {
+      operation: isGranted ? ("Add" as const) : ("Remove" as const),
+      roleId: roleId,
+    };
 
-    try {
-      const updateData = {
-        operation: isGranted ? "Add" : ("Remove" as "Add" | "Remove"),
-        roleId: roleId,
-      };
-
-      toast.loading(
-        isGranted 
-          ? `Assigning "${role.name}" role...` 
-          : `Removing "${role.name}" role...`, 
-        { id: "role-update" }
-      );
-
-      await UserManagementService.updateUserRoles(selectedUser.id, updateData);
-
-      // Since API only returns roleId and userId, manually update the roles
-      const updatedRoles = isGranted
-        ? [
-            ...(selectedUser.roles || []),
-            role,
-          ]
-        : (selectedUser.roles || []).filter((userRole) => userRole.id !== roleId);
-
-      const updatedUser = {
-        ...selectedUser,
-        roles: updatedRoles,
-      };
-
-      setSelectedUser(updatedUser);
-
-      // Update the user in the list
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === selectedUser.id
-            ? { ...updatedUser, isSelected: user.isSelected }
-            : user
-        )
-      );
-
-      toast.success(
-        isGranted 
-          ? `Role assigned successfully`
-          : `Role removed successfully`,
-        {
-          id: "role-update",
-          description: isGranted 
-            ? `${selectedUser.userName} now has the "${role.name}" role`
-            : `${selectedUser.userName} no longer has the "${role.name}" role`,
-          action: {
-            label: "Undo",
-            onClick: () => handleRoleToggle(roleId, !isGranted),
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Failed to update user role:", error);
-      toast.error("Failed to update user role", {
-        id: "role-update",
-        description: "There was an error updating the user's role. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handleRoleToggle(roleId, isGranted),
-        },
-      });
-    }
+    await updateUserRoles(selectedUser.id, updateData);
   };
 
   // Get role icon
@@ -345,7 +149,7 @@ export default function UsersManagement() {
   };
 
   // Render sort indicator
-  const renderSortIndicator = (field: SortField) => {
+  const renderSortIndicator = (field: typeof sortField) => {
     if (sortField !== field) return null;
     return sortDirection === "asc" ? (
       <ChevronUp className="h-4 w-4 ml-1" />
@@ -382,16 +186,13 @@ export default function UsersManagement() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-7 md:pl-10"
               />
-              {searching && (
+              {isSearching && (
                 <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
 
             {/* Role Filter */}
-            <Select
-              value={selectedRole || "all"}
-              onValueChange={handleRoleFilter}
-            >
+            <Select value={selectedRole || "all"} onValueChange={filterByRole}>
               <SelectTrigger>
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
@@ -406,9 +207,9 @@ export default function UsersManagement() {
             </Select>
 
             {/* Refresh Button */}
-            <Button variant="outline" onClick={loadUsers} disabled={loading}>
+            <Button variant="outline" onClick={refreshUsers} disabled={isLoading}>
               <RefreshCw
-                className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
               />
               Refresh
             </Button>
@@ -431,7 +232,7 @@ export default function UsersManagement() {
                 <TableRow>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort("username")}
+                    onClick={() => sortUsers("username")}
                   >
                     <div className="flex items-center">
                       Username
@@ -440,7 +241,7 @@ export default function UsersManagement() {
                   </TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort("role")}
+                    onClick={() => sortUsers("role")}
                   >
                     <div className="flex items-center">
                       Roles
@@ -449,7 +250,7 @@ export default function UsersManagement() {
                   </TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort("createdAt")}
+                    onClick={() => sortUsers("createdAt")}
                   >
                     <div className="flex items-center">
                       Joined
@@ -460,7 +261,7 @@ export default function UsersManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {isLoading ? (
                   // Loading skeleton
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index}>
@@ -609,7 +410,7 @@ export default function UsersManagement() {
       </Card>
 
       {/* Edit User Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
@@ -663,6 +464,8 @@ export default function UsersManagement() {
                       const isGranted = (selectedUser.roles || []).some(
                         (userRole) => userRole.id === role.id
                       );
+                      const isUpdating = isRoleUpdating(role.id);
+
                       return (
                         <div
                           key={role.id}
@@ -672,12 +475,18 @@ export default function UsersManagement() {
                             {getRoleIcon(role.name)}
                             <span className="font-medium">{role.name}</span>
                           </div>
-                          <Checkbox
-                            checked={isGranted}
-                            onCheckedChange={(checked) =>
-                              handleRoleToggle(role.id, !!checked)
-                            }
-                          />
+                          <div className="flex items-center gap-2">
+                            {isUpdating && (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                            <Checkbox
+                              checked={isGranted}
+                              disabled={isUpdating}
+                              onCheckedChange={(checked) =>
+                                handleRoleToggle(role.id, !!checked)
+                              }
+                            />
+                          </div>
                         </div>
                       );
                     })}

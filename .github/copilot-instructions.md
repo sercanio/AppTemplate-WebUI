@@ -700,6 +700,6 @@ try {
   const response = await api.post("/auth/login", credentials);
   useAuthStore.getState().setUser(response.data.user);
 } catch (error) {
-  themedToast("Login failed", "error");
+  themedToast.error('Role assigned successfully');
 }
 

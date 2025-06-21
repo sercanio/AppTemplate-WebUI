@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
@@ -24,7 +24,8 @@ import {
   Edit2, 
   Trash2,
   Key,
-  Search
+  Search,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,7 +35,6 @@ import {
 } from "../../components/ui/dropdown-menu";
 import { Switch } from "../../components/ui/switch";
 import { Skeleton } from "../../components/ui/skeleton";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,276 +45,70 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import {
-  RolesManagementService,
-  type Role,
-  type Permission,
-} from "../services/rolesManagementService";
-
-interface PermissionsByFeature {
-  [feature: string]: Permission[];
-}
+import { useRolesStore } from "../store/rolesStore";
+import type { Role } from "../services/rolesManagementService";
 
 export default function RolesManagement() {
-  // State management
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
-  const [rolePermissions, setRolePermissions] = useState<Permission[]>([]);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [permissionsLoading, setPermissionsLoading] = useState(false);
-  const [updatingPermission, setUpdatingPermission] = useState<string | null>(null);
-  
-  // Modal states
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
-  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
-  
-  // Form states
-  const [newRoleName, setNewRoleName] = useState("");
-  const [editRoleName, setEditRoleName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  
-  // Search state
-  const [permissionSearch, setPermissionSearch] = useState("");
+  // Store state and actions
+  const {
+    roles,
+    selectedRole,
+    isLoading,
+    isPermissionsLoading,
+    isCreateModalOpen,
+    isEditModalOpen,
+    isDeleteDialogOpen,
+    newRoleName,
+    editRoleName,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    permissionSearch,
+    
+    // Actions
+    loadInitialData,
+    handleRoleSelect,
+    handlePermissionToggle,
+    handleCreateRole,
+    handleEditRole,
+    handleDeleteRole,
+    
+    // UI Actions
+    setCreateModalOpen,
+    setEditModalOpen,
+    setDeleteDialogOpen,
+    setNewRoleName,
+    setEditRoleName,
+    setRoleToEdit,
+    setRoleToDelete,
+    setPermissionSearch,
+    
+    // Computed
+    isPermissionGranted,
+    getFilteredPermissionsByFeature,
+    isPermissionUpdating,
+  } = useRolesStore();
 
-  // Load roles and permissions on mount
-  const loadInitialData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [rolesData, permissionsData] = await Promise.all([
-        RolesManagementService.getRoles(0, 100),
-        RolesManagementService.getAllPermissions()
-      ]);
-      
-      setRoles(rolesData.items);
-      setAllPermissions(permissionsData.items);
-      
-      // Select first role if available
-      if (rolesData.items.length > 0) {
-        handleRoleSelect(rolesData.items[0]);
-      }
-    } catch (error) {
-      console.error("Failed to load initial data:", error);
-      toast.error("Failed to load roles and permissions");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Load data on mount
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
 
-  const handleRoleSelect = async (role: Role) => {
-    try {
-      setSelectedRole(role);
-      setPermissionsLoading(true);
-      const permissions = await RolesManagementService.getRolePermissions(role.id);
-      setRolePermissions(permissions);
-    } catch (error) {
-      console.error("Failed to load role permissions:", error);
-      toast.error("Failed to update permissions");
-    } finally {
-      setPermissionsLoading(false);
-    }
+  // Handle role editing
+  const handleEditRoleClick = (role: Role) => {
+    setRoleToEdit(role);
+    setEditRoleName(role.name);
+    setEditModalOpen(true);
   };
 
-  const handlePermissionToggle = async (permission: Permission, isGranted: boolean) => {
-    if (!selectedRole) return;
-    
-    try {
-      setUpdatingPermission(permission.id);
-      await RolesManagementService.updateRolePermission(selectedRole.id, {
-        permissionId: permission.id,
-        operation: isGranted ? "Add" : "Remove"
-      });
-      
-      // Update local state - use the full permission object with name
-      if (isGranted) {
-        setRolePermissions(prev => [...prev, permission]);
-        toast.success(`Permission granted`, {
-          description: `"${permission.name}" has been added to ${selectedRole.name}`,
-        });
-      } else {
-        setRolePermissions(prev => prev.filter(p => p.name !== permission.name));
-        toast.success(`Permission revoked`, {
-          description: `"${permission.name}" has been removed from ${selectedRole.name}`,
-          action: {
-            label: "Undo",
-            onClick: () => handlePermissionToggle(permission, true),
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to update permission:", error);
-      toast.error("Failed to update permission", {
-        description: "There was an error updating the permission. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handlePermissionToggle(permission, isGranted),
-        },
-      });
-    } finally {
-      setUpdatingPermission(null);
-    }
+  const handleDeleteRoleClick = (role: Role) => {
+    setRoleToDelete(role);
+    setDeleteDialogOpen(true);
   };
 
-  const handleCreateRole = async () => {
-    if (!newRoleName.trim()) {
-      toast.error("Role name is required", {
-        description: "Please enter a valid role name"
-      });
-      return;
-    }
+  const filteredPermissionsByFeature = getFilteredPermissionsByFeature();
 
-    try {
-      setCreating(true);
-      toast.loading("Creating role...", { id: "create-role" });
-      
-      const newRole = await RolesManagementService.createRole({ name: newRoleName });
-      setRoles(prev => [...prev, newRole]);
-      setNewRoleName("");
-      setIsCreateModalOpen(false);
-      
-      toast.success(`Role created successfully`, {
-        id: "create-role",
-        description: `"${newRole.name}" has been added to the system`,
-        action: {
-          label: "View",
-          onClick: () => handleRoleSelect(newRole),
-        },
-      });
-    } catch (error) {
-      console.error("Failed to create role:", error);
-      toast.error("Failed to create role", {
-        id: "create-role",
-        description: "There was an error creating the role. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handleCreateRole(),
-        },
-      });
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleEditRole = async () => {
-    if (!roleToEdit || !editRoleName.trim()) return;
-
-    const originalName = roleToEdit.name;
-    
-    try {
-      setUpdating(true);
-      toast.loading("Updating role...", { id: "update-role" });
-      
-      const updatedRole = await RolesManagementService.updateRole(roleToEdit.id, { name: editRoleName });
-      setRoles(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
-      if (selectedRole?.id === roleToEdit.id) {
-        setSelectedRole(updatedRole);
-      }
-      setIsEditModalOpen(false);
-      setRoleToEdit(null);
-      setEditRoleName("");
-      
-      toast.success(`Role updated successfully`, {
-        id: "update-role",
-        description: `"${originalName}" has been renamed to "${updatedRole.name}"`,
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            await RolesManagementService.updateRole(updatedRole.id, { name: originalName });
-            setRoles(prev => prev.map(role => role.id === updatedRole.id ? { ...role, name: originalName } : role));
-            if (selectedRole?.id === updatedRole.id) {
-              setSelectedRole({ ...selectedRole, name: originalName });
-            }
-            toast.success("Role name reverted");
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Failed to update role:", error);
-      toast.error("Failed to update role", {
-        id: "update-role",
-        description: "There was an error updating the role. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handleEditRole(),
-        },
-      });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleDeleteRole = async () => {
-    if (!roleToDelete) return;
-
-    const deletedRoleName = roleToDelete.name;
-    
-    try {
-      setDeleting(true);
-      toast.loading("Deleting role...", { id: "delete-role" });
-      
-      await RolesManagementService.deleteRole(roleToDelete.id);
-      setRoles(prev => prev.filter(role => role.id !== roleToDelete.id));
-      if (selectedRole?.id === roleToDelete.id) {
-        setSelectedRole(null);
-        setRolePermissions([]);
-      }
-      setIsDeleteDialogOpen(false);
-      setRoleToDelete(null);
-      
-      toast.success(`Role deleted`, {
-        id: "delete-role",
-        description: `"${deletedRoleName}" has been permanently removed from the system`,
-      });
-    } catch (error) {
-      console.error("Failed to delete role:", error);
-      toast.error("Failed to delete role", {
-        id: "delete-role",
-        description: "There was an error deleting the role. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handleDeleteRole(),
-        },
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  // Group permissions by feature
-  const permissionsByFeature: PermissionsByFeature = allPermissions.reduce((acc, permission) => {
-    if (!acc[permission.feature]) {
-      acc[permission.feature] = [];
-    }
-    acc[permission.feature].push(permission);
-    return acc;
-  }, {} as PermissionsByFeature);
-
-  // Filter permissions based on search
-  const filteredPermissionsByFeature = Object.entries(permissionsByFeature).reduce((acc, [feature, permissions]) => {
-    const filteredPermissions = permissions.filter(permission =>
-      permission.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
-      feature.toLowerCase().includes(permissionSearch.toLowerCase())
-    );
-    if (filteredPermissions.length > 0) {
-      acc[feature] = filteredPermissions;
-    }
-    return acc;
-  }, {} as PermissionsByFeature);
-
-  const isPermissionGranted = (permissionName: string) => {
-    return rolePermissions?.some(p => p.name === permissionName) || false;
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-2 md:p-6 space-y-6">
         <div className="flex items-center justify-between">
@@ -370,7 +164,7 @@ export default function RolesManagement() {
           <h1 className="text-3xl font-bold">Role Management</h1>
           <p className="text-muted-foreground">Manage roles and permissions in the system</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Role
         </Button>
@@ -418,9 +212,7 @@ export default function RolesManagement() {
                       <DropdownMenuItem 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setRoleToEdit(role);
-                          setEditRoleName(role.name);
-                          setIsEditModalOpen(true);
+                          handleEditRoleClick(role);
                         }}
                       >
                         <Edit2 className="h-4 w-4 mr-2" />
@@ -430,8 +222,7 @@ export default function RolesManagement() {
                         className="text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setRoleToDelete(role);
-                          setIsDeleteDialogOpen(true);
+                          handleDeleteRoleClick(role);
                         }}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -467,7 +258,7 @@ export default function RolesManagement() {
                 <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">Select a role from the list to manage its permissions</p>
               </div>
-            ) : permissionsLoading ? (
+            ) : isPermissionsLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
                 {[...Array(3)].map((_, i) => (
@@ -512,6 +303,8 @@ export default function RolesManagement() {
                       <div className="space-y-2 pl-8">
                         {permissions.map((permission) => {
                           const isGranted = isPermissionGranted(permission.name);
+                          const isUpdating = isPermissionUpdating(permission.id);
+                          
                           return (
                             <div
                               key={permission.id}
@@ -521,13 +314,13 @@ export default function RolesManagement() {
                                 <p className="font-medium">{permission.name}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {updatingPermission === permission.id && (
-                                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                {isUpdating && (
+                                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 )}
                                 <Switch
                                   checked={isGranted}
                                   onCheckedChange={(checked) => handlePermissionToggle(permission, checked)}
-                                  disabled={updatingPermission === permission.id}
+                                  disabled={isUpdating}
                                 />
                               </div>
                             </div>
@@ -544,7 +337,7 @@ export default function RolesManagement() {
       </div>
 
       {/* Create Role Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+      <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Role</DialogTitle>
@@ -560,22 +353,19 @@ export default function RolesManagement() {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                setNewRoleName("");
-              }}
+              onClick={() => setCreateModalOpen(false)}
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateRole} disabled={creating}>
-              {creating ? "Creating..." : "Create"}
+            <Button onClick={handleCreateRole} disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Role Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Role</DialogTitle>
@@ -591,23 +381,19 @@ export default function RolesManagement() {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setIsEditModalOpen(false);
-                setRoleToEdit(null);
-                setEditRoleName("");
-              }}
+              onClick={() => setEditModalOpen(false)}
             >
               Cancel
             </Button>
-            <Button onClick={handleEditRole} disabled={updating}>
-              {updating ? "Updating..." : "Update"}
+            <Button onClick={handleEditRole} disabled={isUpdating}>
+              {isUpdating ? "Updating..." : "Update"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Role Confirmation */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Role</AlertDialogTitle>
@@ -619,10 +405,10 @@ export default function RolesManagement() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteRole}
-              disabled={deleting}
+              disabled={isDeleting}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
