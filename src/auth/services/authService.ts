@@ -46,6 +46,26 @@ export interface EmailConfirmationResult {
   message: string;
 }
 
+export interface ForgotPasswordParams {
+  email: string;
+}
+
+export interface ForgotPasswordResult {
+  success: boolean;
+  message: string;
+}
+
+export interface ResetPasswordParams {
+  email: string;
+  code: string;
+  password: string;
+}
+
+export interface ResetPasswordResult {
+  success: boolean;
+  message: string;
+}
+
 export class AuthService {  static async initializeAntiForgeryToken(): Promise<void> {
     try {
       const response = await axios.get(
@@ -267,6 +287,108 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
       return { message: result.message };
     } else {
       throw new Error(result.message);
+    }
+  }
+
+  /**
+   * Send a forgot password email to the user
+   */
+  static async forgotPassword(params: ForgotPasswordParams): Promise<ForgotPasswordResult> {
+    console.log('AuthService.forgotPassword called with email:', params.email);
+
+    try {      const url = `${API_URL}/Account/forgotpassword`;
+      
+      await axios.post(url, {
+        email: params.email
+      }, {
+        withCredentials: true,
+        timeout: 8000,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Forgot password request successful');
+
+      return {
+        success: true,
+        message: "If an account with that email exists, we've sent you a password reset link.",
+      };
+    } catch (error: unknown) {
+      console.error('Forgot password error:', error);
+
+      // For security reasons, we don't want to reveal if the email exists or not
+      // So we'll show a success message even if the email doesn't exist in the system
+      return {
+        success: true,
+        message: "If an account with that email exists, we've sent you a password reset link.",
+      };
+    }
+  }
+
+  /**
+   * Reset user password using the reset code
+   */
+  static async resetPassword(params: ResetPasswordParams): Promise<ResetPasswordResult> {
+    console.log('AuthService.resetPassword called with email:', params.email);
+
+    try {      const url = `${API_URL}/Account/resetpassword`;
+      
+      await axios.post(url, {
+        email: params.email,
+        code: params.code,
+        password: params.password
+      }, {
+        withCredentials: true,
+        timeout: 8000,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Password reset successful');
+
+      return {
+        success: true,
+        message: "Your password has been successfully reset. You can now log in with your new password.",
+      };    } catch (error: unknown) {
+      console.error('Reset password error:', error);
+
+      let errorMessage = "Failed to reset your password. Please try again or contact support.";
+
+      const err = error as { response?: { data?: { error?: string; message?: string; title?: string; errors?: Record<string, unknown> }; status?: number }; request?: unknown };
+
+      if (err.response) {
+        if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data?.title) {
+          errorMessage = err.response.data.title;        } else if (err.response.data?.errors?.Email) {
+          // Handle email validation errors
+          const emailErrors = err.response.data.errors.Email;
+          errorMessage = Array.isArray(emailErrors) 
+            ? emailErrors.join('. ')
+            : String(emailErrors);
+        } else if (err.response.data?.errors?.Password) {
+          // Handle password validation errors
+          const passwordErrors = err.response.data.errors.Password;
+          errorMessage = Array.isArray(passwordErrors) 
+            ? passwordErrors.join('. ')
+            : String(passwordErrors);
+        } else if (err.response.status === 400) {
+          errorMessage = "Invalid or expired password reset link. Please request a new password reset link.";
+        } else if (err.response.status === 404) {
+          errorMessage = "User not found. Please ensure you're using the correct reset link.";
+        }
+      } else if (err.request) {
+        errorMessage = "No response received from the server. Please check your connection and try again.";
+      } else {
+        errorMessage = "Error setting up the request. Please try again later.";
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
   }
 }
