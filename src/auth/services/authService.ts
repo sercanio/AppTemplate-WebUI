@@ -86,7 +86,7 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
   ): Promise<LoginResponse> {
     try {
       const response = await axios.post<LoginResponse>(
-        `${API_URL}/Account/loginwith2fa`,
+        `${API_URL}/Account/2fa/login`,
         {
           twoFactorCode,
           rememberMe,
@@ -112,7 +112,7 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
   ): Promise<LoginResponse> {
     try {
       const response = await axios.post<LoginResponse>(
-        `${API_URL}/Account/loginwithrecoverycode`,
+        `${API_URL}/Account/2fa/login-recovery`,
         {
           recoveryCode,
         },

@@ -13,6 +13,24 @@ export type ProfileState = {
   notificationUpdateError: string | null;
   profileUpdateSuccess: boolean;
   profileUpdateError: string | null;
+
+  // 2FA states
+  twoFactorSuccess: boolean;
+  twoFactorError: string | null;
+  twoFactorStatus: {
+    hasAuthenticator: boolean;
+    is2faEnabled: boolean;
+    isMachineRemembered: boolean;
+    recoveryCodesLeft: number;
+  } | null;
+  authenticatorDetails: {
+    sharedKey: string;
+    authenticatorUri: string;
+    qrCodeUri: string;
+  } | null;
+  generatedRecoveryCodes: string[] | null;
+  showRecoveryCodes: boolean;
+
   profileData: {
     userName: string;
     email: string;
@@ -53,6 +71,16 @@ export type ProfileContextType = {
   changeEmail: (newEmail: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
   validateAndUploadImage: (file: File) => Promise<void>;
+    // 2FA methods
+  loadTwoFactorStatus: () => Promise<void>;
+  loadAuthenticatorDetails: () => Promise<void>;
+  enableTwoFactor: (code: string) => Promise<void>;
+  disableTwoFactor: () => Promise<void>;
+  resetAuthenticator: () => Promise<void>;
+  generateRecoveryCodes: () => Promise<void>;
+  forgetBrowser: () => Promise<void>;
+  setShowRecoveryCodes: (show: boolean) => void;
+  setAuthenticatorDetails: (details: ProfileState['authenticatorDetails']) => void;
   getInitials: () => string;
 };
 

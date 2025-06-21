@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Alert, AlertDescription } from "./ui/alert";
 import { Shield, AlertCircle, Key } from 'lucide-react';
 import { useAuthStore } from '../auth/store/authStore';
+import { toast } from 'sonner';
 
 interface TwoFactorLoginProps {
   onBack: () => void;
@@ -25,15 +26,19 @@ export function TwoFactorLogin({ onBack }: TwoFactorLoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (mode === 'authenticator') {
-      await loginWith2fa(code, rememberMachine);
-    } else {
-      await loginWithRecoveryCode(code);
+    try {
+      if (mode === 'authenticator') {
+        await loginWith2fa(code, rememberMachine);
+      } else {
+        await loginWithRecoveryCode(code);
+      }
+      
+      // Redirect after successful 2FA
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    } catch {
+      toast.error('Verification failed. Please check your code and try again.');
     }
-    
-    // Redirect after successful 2FA
-    const from = location.state?.from?.pathname || '/';
-    navigate(from, { replace: true });    
   };
 
   const formatAuthenticatorCode = (value: string) => {
