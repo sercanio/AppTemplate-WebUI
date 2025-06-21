@@ -4,6 +4,10 @@ import Dashboard from '../pages/dashboard'
 import Users from '../pages/Users'
 import Settings from '../pages/Settings'
 import Login from '../pages/Login'
+import Register from '../pages/Register'
+import ForgotPassword from '../pages/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword'
+import ConfirmEmail from '../pages/ConfirmEmail'
 import ErrorPage from '../pages/ErrorPage'
 import ProtectedRoute from '../components/auth/ProtectedRoute'
 import PublicRoute from '../components/auth/PublicRoute'
@@ -74,6 +78,34 @@ const router = createBrowserRouter([
         <Login />
       </PublicRoute>
     ),
+  },
+  {
+    path: '/register',
+    element: (
+      <PublicRoute>
+        <Register />
+      </PublicRoute>
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <PublicRoute>
+        <ForgotPassword />
+      </PublicRoute>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <PublicRoute>
+        <ResetPassword />
+      </PublicRoute>
+    ),
+  },
+  {
+    path: '/confirm-email',
+    element: <ConfirmEmail />,
   },
 ])
 

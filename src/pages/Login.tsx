@@ -109,12 +109,6 @@ export default function Login() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Password</Label>
-                                    <Link 
-                                        to="/auth/forgot-password" 
-                                        className="text-sm text-steel-blue hover:text-steel-blue/80 transition-colors"
-                                    >
-                                        Forgot password?
-                                    </Link>
                                 </div>
                                 <Input 
                                     id="password"
@@ -126,23 +120,30 @@ export default function Login() {
                                     required
                                     className="focus:ring-yellow-green focus:border-yellow-green"
                                 />
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                                <Checkbox 
-                                    id="remember-me" 
-                                    checked={formData.rememberMe}
-                                    onCheckedChange={(checked) => 
-                                        setFormData({ ...formData, rememberMe: checked as boolean })
-                                    }
-                                    disabled={isLoading}
-                                />
-                                <Label 
-                                    htmlFor="remember-me" 
-                                    className="text-sm text-muted-foreground cursor-pointer"
+                            </div>                            
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id="remember-me" 
+                                        checked={formData.rememberMe}
+                                        onCheckedChange={(checked) => 
+                                            setFormData({ ...formData, rememberMe: checked as boolean })
+                                        }
+                                        disabled={isLoading}
+                                    />
+                                    <Label 
+                                        htmlFor="remember-me" 
+                                        className="text-sm text-muted-foreground cursor-pointer"
+                                    >
+                                        Remember me
+                                    </Label>
+                                </div>
+                                <Link 
+                                    to="/forgot-password"
+                                    className="text-sm text-steel-blue hover:text-steel-blue/80 font-medium transition-colors"
                                 >
-                                    Remember me
-                                </Label>
+                                    Forgot password?
+                                </Link>
                             </div>
                             
                             <Button 
@@ -155,11 +156,10 @@ export default function Login() {
                         </form>
                     </CardContent>
                     
-                    <CardFooter className="flex justify-center border-t p-6">
-                        <p className="text-sm text-muted-foreground">
+                    <CardFooter className="flex justify-center border-t p-6">                        <p className="text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <Link 
-                                to="/auth/register" 
+                                to="/register" 
                                 className="text-steel-blue hover:text-steel-blue/80 font-medium transition-colors"
                             >
                                 Create account

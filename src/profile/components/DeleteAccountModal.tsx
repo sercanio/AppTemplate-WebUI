@@ -1,21 +1,13 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "../../components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { AccountService } from "../services/accountService";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../auth/store/authStore";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { themedToast } from "../../lib/toast";
+import { AlertTriangle } from "lucide-react";
+import { useAuthStore } from "../../auth/store/authStore";
+import { useProfile } from "../hooks/useProfile";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -24,52 +16,33 @@ interface DeleteAccountModalProps {
 
 export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps) {
   const [password, setPassword] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { logout } = useAuthStore();
+  const { deleteAccount, state } = useProfile();
+  const { isSaving, profileUpdateError } = state;
 
   const confirmationText = "DELETE MY ACCOUNT";
 
   const handleDelete = async () => {
     if (confirmText !== confirmationText) {
-      setError("Please type the confirmation text exactly as shown");
       return;
-    }
-
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      await AccountService.deleteAccount({
-        password: password
-      });
-
-      themedToast.success("Account deleted successfully");
-
+    }    try {
+      await deleteAccount(password);
+      
       // Log the user out
       await logout();
-
+      
       // Redirect to home page
       navigate("/", { replace: true });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          "Failed to delete account. Please try again.";
-      setError(errorMessage);
-      themedToast.error("Failed to delete account", {
-        description: errorMessage
-      });
-      setIsDeleting(false);
+    } catch {
+      // Error already handled by context
     }
   };
-
   const handleClose = () => {
-    if (!isDeleting) {
+    if (!isSaving) {
       setPassword("");
       setConfirmText("");
-      setError(null);
       onClose();
     }
   };
@@ -85,11 +58,9 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
           <DialogDescription>
             This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
           </DialogDescription>
-        </DialogHeader>
-
-        {error && (
+        </DialogHeader>        {profileUpdateError && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{profileUpdateError}</AlertDescription>
           </Alert>
         )}
 
@@ -104,19 +75,19 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isDeleting}
+              disabled={isSaving}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm" className="text-sm">
-              Type <span className="font-bold">{confirmationText}</span> to confirm
+              Type <strong>{confirmationText}</strong> to confirm
             </Label>
             <Input
               id="confirm"
               placeholder={confirmationText}
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              disabled={isDeleting}
+              disabled={isSaving}
             />
           </div>
         </div>
@@ -126,7 +97,7 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
             type="button"
             variant="outline"
             onClick={handleClose}
-            disabled={isDeleting}
+            disabled={isSaving}
           >
             Cancel
           </Button>
@@ -134,16 +105,9 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
             type="button"
             variant="destructive"
             onClick={handleDelete}
-            disabled={confirmText !== confirmationText || !password || isDeleting}
+            disabled={confirmText !== confirmationText || !password || isSaving}
           >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              "Delete Account"
-            )}
+            {isSaving ? "Deleting..." : "Delete Account"}
           </Button>
         </DialogFooter>
       </DialogContent>

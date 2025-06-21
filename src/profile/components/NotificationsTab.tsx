@@ -8,7 +8,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Switch } from "../../components/ui/switch";
 import { Loader2 } from "lucide-react";
-import { useProfile } from "../context/profileContext";
+import { useProfile } from "../hooks/useProfile";
 
 export function NotificationsTab() {
   const { state, updateNotificationSettings, handleNotificationUpdate } =

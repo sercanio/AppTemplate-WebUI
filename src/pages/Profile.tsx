@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
 import { useAuthStore } from "../auth/store/authStore";
 import { Tabs, TabsContent } from "../components/ui/tabs";
-import { ProfileProvider, useProfile } from "../profile/context/profileContext";
+import { ProfileProvider } from "../profile/context/profileContext";
+import { useProfile } from "../profile/hooks/useProfile";
 import { ProfileTabs } from "../profile/components/ProfileTabs";
-import { StatusMessages } from "../profile/components/StatusMessages";
 import { ProfileTab } from "../profile/components/ProfileTab";
 import { SecurityTab } from "../profile/components/SecurityTab";
 import { NotificationsTab } from "../profile/components/NotificationsTab";
 import { SettingsTab } from "../profile/components/SettingsTab";
 import { AuthWarning } from "../profile/components/AuthWarning";
 import { EmailConfirmationAlert } from "../profile/components/EmailConfirmationAlert";
-import { useLocation } from "react-router-dom";
 import {
   Avatar,
   AvatarFallback,
@@ -19,27 +17,9 @@ import {
 
 export default function Profile() {
   const { user, isAuthenticated } = useAuthStore();
-  const location = useLocation();
-
-  const getDefaultTab = () => {
-    if (location.pathname.includes("/profile/security")) return "security";
-    if (location.pathname.includes("/profile/notifications")) return "notifications";
-    if (location.pathname.includes("/profile/settings")) return "settings";
-    return "profile";
-  };
-
-  const [currentTab, setCurrentTab] = useState(getDefaultTab());
-
-  useEffect(() => {
-    const newTab = getDefaultTab();
-    if (newTab !== currentTab) {
-      setCurrentTab(newTab);
-    }
-  }, [location.pathname, currentTab]);
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      {!isAuthenticated ? (
+    <div className="min-h-screen bg-background pb-8">      {!isAuthenticated || !user ? (
         <AuthWarning />
       ) : (
         <>
@@ -65,9 +45,8 @@ export default function Profile() {
 
           {/* Main Content */}
           <div className="container mx-auto px-4 py-8 max-w-5xl">
-            <EmailConfirmationAlert user={user!} />
-
             <ProfileProvider user={user}>
+              <EmailConfirmationAlert user={user} />
               <ProfileContent />
             </ProfileProvider>
           </div>
@@ -84,7 +63,7 @@ function ProfileContent() {
   return (
     <Tabs value={activeTab} className="w-full">
       <ProfileTabs />
-      <StatusMessages />
+      {/* <StatusMessages /> */}
 
       <TabsContent value="profile">
         <ProfileTab />
