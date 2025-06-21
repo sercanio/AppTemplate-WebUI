@@ -31,6 +31,21 @@ export interface RegisterResponse {
   message: string;
 }
 
+export interface ConfirmEmailChangeResponse {
+  message: string;
+}
+
+export interface EmailConfirmationParams {
+  userId: string;
+  code: string;
+  email?: string;
+}
+
+export interface EmailConfirmationResult {
+  success: boolean;
+  message: string;
+}
+
 export class AuthService {  static async initializeAntiForgeryToken(): Promise<void> {
     try {
       const response = await axios.get(
@@ -167,6 +182,91 @@ export class AuthService {  static async initializeAntiForgeryToken(): Promise<v
       return response.data;
     } catch {
       return null;
+    }
+  }  /**
+   * Confirm email (handles both new user confirmation and email change)
+   */
+  static async confirmEmail(params: EmailConfirmationParams): Promise<EmailConfirmationResult> {
+    console.log('AuthService.confirmEmail called with params:', params);
+    
+    try {
+      let url: string;
+      
+      // Determine which endpoint to use based on presence of email parameter
+      if (params.email) {
+        // Email change confirmation
+        url = `${API_URL}/Account/confirmemailchange?userId=${encodeURIComponent(params.userId)}&code=${encodeURIComponent(params.code)}&email=${encodeURIComponent(params.email)}`;
+      } else {
+        // New user email confirmation
+        url = `${API_URL}/Account/confirmemail?userId=${encodeURIComponent(params.userId)}&code=${encodeURIComponent(params.code)}`;
+      }
+
+      console.log('Making request to:', url);
+
+      const response = await axios.get(url, {
+        withCredentials: true,
+        timeout: 5000,
+      });
+
+      console.log('Response received:', response.data);
+
+      // Customize success message based on confirmation type
+      const successMessage = params.email 
+        ? "Your email has been successfully changed and confirmed."
+        : "Your email has been successfully confirmed.";
+
+      return {
+        success: true,
+        message: response.data?.message || successMessage,
+      };
+    } catch (error: unknown) {
+      console.error("Email confirmation failed:", error);
+      
+      // Extract error message from response if available
+      let errorMessage = "Failed to confirm email. Please try again or contact support.";
+      
+      const err = error as { response?: { data?: { message?: string; title?: string }; status?: number }; request?: unknown };
+      
+      if (err.response) {
+        if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data?.title) {
+          errorMessage = err.response.data.title;
+        } else if (err.response.status === 400) {
+          errorMessage = "Invalid or expired confirmation link. Please request a new email confirmation link.";
+        } else if (err.response.status === 404) {
+          errorMessage = "User not found. Please ensure you're logged in with the correct account.";
+        } else if (err.response.status === 401) {
+          errorMessage = "You need to be logged in to confirm your email.";
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMessage = "No response received from the server. Please check your connection and try again.";
+      } else {
+        // Something happened in setting up the request
+        errorMessage = "Error setting up the request. Please try again later.";
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * @deprecated Use confirmEmail instead
+   */
+  static async confirmEmailChange(
+    userId: string,
+    email: string,
+    code: string
+  ): Promise<ConfirmEmailChangeResponse> {
+    const result = await this.confirmEmail({ userId, email, code });
+    if (result.success) {
+      return { message: result.message };
+    } else {
+      throw new Error(result.message);
     }
   }
 }

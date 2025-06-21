@@ -4,6 +4,7 @@ import Dashboard from '../pages/dashboard'
 import Users from '../pages/Users'
 import Settings from '../pages/Settings'
 import Login from '../pages/Login'
+import ConfirmEmail from '../pages/ConfirmEmail'
 import ErrorPage from '../pages/ErrorPage'
 import ProtectedRoute from '../components/auth/ProtectedRoute'
 import PublicRoute from '../components/auth/PublicRoute'
@@ -74,6 +75,9 @@ const router = createBrowserRouter([
         <Login />
       </PublicRoute>
     ),
+  },  {
+    path: '/confirm-email',
+    element: <ConfirmEmail />,
   },
 ])
 
