@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useProfile } from "../context/profileContext";
+import { useProfile } from "../hooks/useProfile";
 
 export function StatusMessages() {
   const { state } = useProfile();

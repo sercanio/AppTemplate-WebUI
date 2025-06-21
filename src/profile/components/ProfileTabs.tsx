@@ -1,6 +1,6 @@
 import { TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { User, Shield, Bell, Settings } from "lucide-react";
-import { useProfile } from "../context/profileContext";
+import { useProfile } from "../hooks/useProfile";
 
 export function ProfileTabs() {
   const { setActiveTab } = useProfile();

@@ -1,23 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
-import { useProfile } from "../context/profileContext";
-import { useAuthStore } from "../../auth/store/authStore";
-import { themedToast } from "../../lib/toast";
-import { parseError } from "../../lib/utils";
+import { useProfile } from "../hooks/useProfile";
 
 export function SecurityTab() {
-  const { state, updatePasswordData } = useProfile();
-  const { passwordData } = state;
-  const { changePassword } = useAuthStore();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { state, updatePasswordData, handlePasswordChange } = useProfile();
+  const { passwordData, isSaving, passwordChangeSuccess, passwordChangeError } = state;
 
   const [passwordStrength, setPasswordStrength] = useState<{
     score: number;
@@ -51,94 +43,29 @@ export function SecurityTab() {
     setPasswordStrength({ score, message });
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate passwords
-    if (!passwordData.currentPassword) {
-      setError("Current password is required");
-      return;
-    }
-
-    if (!passwordData.newPassword) {
-      setError("New password is required");
-      return;
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError("New passwords do not match");
-      return;
-    }
-
-    if (passwordData.newPassword.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
-    }
-
-    if (passwordStrength.score < 3) {
-      setError("Password is too weak. Please choose a stronger password.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSuccess(false);
-    setError(null);
-
-    try {
-      await changePassword({
-        oldPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-        confirmPassword: passwordData.confirmPassword,
-      });
-
-      setSuccess(true);
-      themedToast.success("Password updated successfully");
-
-      // Reset form
-      updatePasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-
-      // Reset password strength
-      setPasswordStrength({ score: 0, message: "" });
-    } catch (error: unknown) {
-      const errorMessage = parseError(error);
-      setError(errorMessage);
-      themedToast.error("Failed to update password", {
-        description: errorMessage
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Get color for password strength indicator
   const getStrengthColor = () => {
     if (passwordStrength.score < 2) return "bg-red-500";
     if (passwordStrength.score < 4) return "bg-yellow-500";
     return "bg-green-500";
   };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Change Password</CardTitle>
         <CardDescription>Update your account password for better security</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {success && (
+      </CardHeader>      <CardContent>
+        {passwordChangeSuccess && (
           <Alert className="mb-6 bg-green-50 border-green-200 text-green-800">
             <ShieldCheck className="h-4 w-4 text-green-600" />
             <AlertDescription>Password updated successfully!</AlertDescription>
           </Alert>
         )}
 
-        {error && (
+        {passwordChangeError && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{passwordChangeError}</AlertDescription>
           </Alert>
         )}
 
@@ -151,7 +78,7 @@ export function SecurityTab() {
                 type="password"
                 value={passwordData.currentPassword}
                 onChange={(e) => updatePasswordData({ currentPassword: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isSaving}
                 required
               />
             </div>
@@ -166,7 +93,7 @@ export function SecurityTab() {
                   updatePasswordData({ newPassword: e.target.value });
                   validatePassword(e.target.value);
                 }}
-                disabled={isSubmitting}
+                disabled={isSaving}
                 required
               />
 
@@ -194,7 +121,7 @@ export function SecurityTab() {
                 type="password"
                 value={passwordData.confirmPassword}
                 onChange={(e) => updatePasswordData({ confirmPassword: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isSaving}
                 required
               />
 
@@ -210,14 +137,14 @@ export function SecurityTab() {
             type="submit"
             className="mt-6 bg-gradient-to-r from-steel-blue to-yellow-green hover:opacity-90"
             disabled={
-              isSubmitting ||
+              isSaving ||
               !passwordData.currentPassword ||
               !passwordData.newPassword ||
               !passwordData.confirmPassword ||
               passwordData.newPassword !== passwordData.confirmPassword
             }
           >
-            {isSubmitting ? (
+            {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Updating...

@@ -1,58 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { User } from "../../auth/store/authStore";
 import { useAuthStore } from "../../auth/store/authStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AccountService } from "../services/accountService";
 import { ProfilePictureService } from "../services/profilePictureService";
+import { compressImage, validateImageFile } from "../utils/imageUtils";
 import { themedToast } from "../../lib/toast";
 import { parseError } from "../../lib/utils";
-
-// --- State Types ---
-type ProfileState = {
-  isEditing: boolean;
-  isSaving: boolean;
-  saveSuccess: boolean;
-  saveError: string | null;
-  profileData: {
-    userName: string;
-    email: string;
-    location: string;
-    profilePictureUrl: string | null;
-  };
-  passwordData: {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  };
-  notificationSettings: {
-    emailNotifications: boolean;
-    inAppNotifications: boolean;
-    pushNotifications: boolean;
-    newEvents: boolean;
-    newMessages: boolean;
-    marketingEmails: boolean;
-  };
-};
-
-type ProfileContextType = {
-  state: ProfileState;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  updateProfileData: (data: Partial<ProfileState["profileData"]>) => void;
-  updatePasswordData: (data: Partial<ProfileState["passwordData"]>) => void;
-  updateNotificationSettings: (
-    data: Partial<ProfileState["notificationSettings"]>
-  ) => void;
-  resetPasswordForm: () => void;
-  handlePasswordChange: (e: React.FormEvent) => Promise<void>;
-  handleNotificationUpdate: (e: React.FormEvent) => Promise<void>;
-  handleProfileDataUpdate: (data: Partial<ProfileState["profileData"]>) => Promise<void>;
-  updateProfilePicture: (file: File) => Promise<void>;
-  deleteProfilePicture: () => Promise<void>;
-  getInitials: () => string;
-};
-
-const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
+import { ProfileContext, type ProfileState } from "./profileTypes";
 
 export function ProfileProvider({
   children,
@@ -64,18 +19,27 @@ export function ProfileProvider({
   const location = useLocation();
   const navigate = useNavigate();
   const { updateUser } = useAuthStore();
-
-  const getInitialTabFromPath = () => {
+  const getInitialTabFromPath = useCallback(() => {
     if (location.pathname.includes("/profile/security")) return "security";
     if (location.pathname.includes("/profile/notifications")) return "notifications";
     if (location.pathname.includes("/profile/settings")) return "settings";
     return "profile";
-  };
+  }, [location.pathname]);
 
   const [activeTab, setActiveTab] = useState(getInitialTabFromPath());
   const [state, setState] = useState<ProfileState>({
     isEditing: false,
     isSaving: false,
+    // Operation-specific states
+    emailChangeSuccess: false,
+    emailChangeError: null,
+    passwordChangeSuccess: false,
+    passwordChangeError: null,
+    notificationUpdateSuccess: false,
+    notificationUpdateError: null,
+    profileUpdateSuccess: false,
+    profileUpdateError: null,
+    // Legacy states for backward compatibility
     saveSuccess: false,
     saveError: null,
     profileData: {
@@ -94,15 +58,25 @@ export function ProfileProvider({
       marketingEmails: false,
     },
   });
-
   useEffect(() => {
     setActiveTab(getInitialTabFromPath());
-  }, [location.pathname]);
-
+  }, [getInitialTabFromPath]);
   // State updaters
   const setIsSaving = (value: boolean) => setState(prev => ({ ...prev, isSaving: value }));
+  // Legacy setters for backward compatibility
   const setSaveSuccess = (value: boolean) => setState(prev => ({ ...prev, saveSuccess: value }));
   const setSaveError = (error: string | null) => setState(prev => ({ ...prev, saveError: error }));
+  
+  // Operation-specific setters
+  const setEmailChangeSuccess = (value: boolean) => setState(prev => ({ ...prev, emailChangeSuccess: value }));
+  const setEmailChangeError = (error: string | null) => setState(prev => ({ ...prev, emailChangeError: error }));
+  const setPasswordChangeSuccess = (value: boolean) => setState(prev => ({ ...prev, passwordChangeSuccess: value }));
+  const setPasswordChangeError = (error: string | null) => setState(prev => ({ ...prev, passwordChangeError: error }));
+  const setNotificationUpdateSuccess = (value: boolean) => setState(prev => ({ ...prev, notificationUpdateSuccess: value }));
+  const setNotificationUpdateError = (error: string | null) => setState(prev => ({ ...prev, notificationUpdateError: error }));
+  const setProfileUpdateSuccess = (value: boolean) => setState(prev => ({ ...prev, profileUpdateSuccess: value }));
+  const setProfileUpdateError = (error: string | null) => setState(prev => ({ ...prev, profileUpdateError: error }));
+
   const updateProfileData = (data: Partial<ProfileState['profileData']>) =>
     setState(prev => ({ ...prev, profileData: { ...prev.profileData, ...data } }));
   const updatePasswordData = (data: Partial<ProfileState['passwordData']>) =>
@@ -114,14 +88,37 @@ export function ProfileProvider({
     setState(prev => ({ ...prev, passwordData: { currentPassword: "", newPassword: "", confirmPassword: "" } }));
 
   // Handlers
+  const handleNotificationUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setNotificationUpdateSuccess(false);
+    setNotificationUpdateError(null);
+
+    try {
+      await AccountService.updateNotificationPreferences({
+        emailNotification: state.notificationSettings.emailNotifications,
+        inAppNotification: state.notificationSettings.inAppNotifications,
+        pushNotification: state.notificationSettings.pushNotifications,
+      });
+      setNotificationUpdateSuccess(true);
+      themedToast.success("Notification preferences updated");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setNotificationUpdateError(msg);
+      themedToast.error(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    setPasswordChangeSuccess(false);
+    setPasswordChangeError(null);
 
     if (state.passwordData.newPassword !== state.passwordData.confirmPassword) {
-      setSaveError("New passwords do not match");
+      setPasswordChangeError("New passwords do not match");
       setIsSaving(false);
       return;
     }
@@ -132,35 +129,12 @@ export function ProfileProvider({
         newPassword: state.passwordData.newPassword,
         confirmPassword: state.passwordData.confirmPassword,
       });
-      setSaveSuccess(true);
+      setPasswordChangeSuccess(true);
       resetPasswordForm();
       themedToast.success("Password updated successfully");
     } catch (error: unknown) {
       const msg = parseError(error);
-      setSaveError(msg);
-      themedToast.error(msg);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleNotificationUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
-
-    try {
-      await AccountService.updateNotificationPreferences({
-        emailNotification: state.notificationSettings.emailNotifications,
-        inAppNotification: state.notificationSettings.inAppNotifications,
-        pushNotification: state.notificationSettings.pushNotifications,
-      });
-      setSaveSuccess(true);
-      themedToast.success("Notification preferences updated");
-    } catch (error: unknown) {
-      const msg = parseError(error);
-      setSaveError(msg);
+      setPasswordChangeError(msg);
       themedToast.error(msg);
     } finally {
       setIsSaving(false);
@@ -170,43 +144,42 @@ export function ProfileProvider({
   const handleProfileDataUpdate = async (data: Partial<ProfileState['profileData']>) => {
     if (!user?.id) {
       const msg = "User ID not found";
-      setSaveError(msg);
+      setProfileUpdateError(msg);
       themedToast.error(msg);
       return;
     }
 
     setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    setProfileUpdateSuccess(false);
+    setProfileUpdateError(null);
 
     try {
       await AccountService.updateUserProfile(user.id, data);
       updateProfileData(data);
-      setSaveSuccess(true);
+      setProfileUpdateSuccess(true);
       themedToast.success("Profile updated successfully");
     } catch (error: unknown) {
       const msg = parseError(error);
-      setSaveError(msg);
+      setProfileUpdateError(msg);
       themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
   };
-
   const updateProfilePicture = async (file: File) => {
     setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    setProfileUpdateSuccess(false);
+    setProfileUpdateError(null);
 
     try {
       const result = await ProfilePictureService.uploadProfilePicture(file);
       updateProfileData({ profilePictureUrl: result.profilePictureUrl });
       updateUser({ profilePictureUrl: result.profilePictureUrl });
-      setSaveSuccess(true);
+      setProfileUpdateSuccess(true);
       themedToast.success("Profile picture updated");
     } catch (error: unknown) {
       const msg = parseError(error);
-      setSaveError(msg);
+      setProfileUpdateError(msg);
       themedToast.error(msg);
     } finally {
       setIsSaving(false);
@@ -215,35 +188,117 @@ export function ProfileProvider({
 
   const deleteProfilePicture = async () => {
     setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    setProfileUpdateSuccess(false);
+    setProfileUpdateError(null);
 
     try {
       await ProfilePictureService.deleteProfilePicture();
       updateProfileData({ profilePictureUrl: null });
       updateUser({ profilePictureUrl: null });
-      setSaveSuccess(true);
+      setProfileUpdateSuccess(true);
       themedToast.success("Profile picture deleted");
     } catch (error: unknown) {
       const msg = parseError(error);
-      setSaveError(msg);
+      setProfileUpdateError(msg);
       themedToast.error(msg);
     } finally {
       setIsSaving(false);
     }
   };
-
   const getInitials = () => {
     if (!user?.userName) return "U";
     return user.userName.charAt(0).toUpperCase();
+  };
+  const requestEmailVerification = async (email: string) => {
+    setIsSaving(true);
+    setEmailChangeError(null);
+    
+    try {
+      await AccountService.requestEmailVerification(email);
+      themedToast.success("Verification email sent");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setEmailChangeError(msg);
+      themedToast.error("Failed to send verification email");
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const changeEmail = async (newEmail: string) => {
+    setIsSaving(true);
+    setEmailChangeError(null);
+    setEmailChangeSuccess(false);
+    
+    try {
+      await AccountService.changeEmail({ newEmail });
+      setEmailChangeSuccess(true);
+      themedToast.success("Email change request sent");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setEmailChangeError(msg);
+      themedToast.error("Failed to change email");
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const deleteAccount = async (password: string) => {
+    setIsSaving(true);
+    setProfileUpdateError(null);
+
+    try {
+      await AccountService.deleteAccount({ password });
+      themedToast.success("Account deleted successfully");
+      // Let the component handle logout and navigation
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setProfileUpdateError(msg);
+      themedToast.error("Failed to delete account");
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const validateAndUploadImage = async (file: File) => {
+    // Validate file
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      setSaveError(validation.errorMessage);
+      themedToast.error(validation.errorMessage);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveSuccess(false);
+    setSaveError(null);
+
+    try {
+      // Compress image
+      const compressedFile = await compressImage(file, 3);
+      
+      // Upload to server
+      const result = await ProfilePictureService.uploadProfilePicture(compressedFile);
+      updateProfileData({ profilePictureUrl: result.profilePictureUrl });
+      updateUser({ profilePictureUrl: result.profilePictureUrl });
+      setSaveSuccess(true);
+      themedToast.success("Profile picture updated successfully");
+    } catch (error: unknown) {
+      const msg = parseError(error);
+      setSaveError(msg);
+      themedToast.error("Failed to upload profile picture");
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <ProfileContext.Provider
       value={{
         state,
-        activeTab,
-        setActiveTab: tab => {
+        activeTab,        setActiveTab: (tab: string) => {
           setActiveTab(tab);
           navigate(tab === "profile" ? "/profile" : `/profile/${tab}`);
         },
@@ -252,10 +307,13 @@ export function ProfileProvider({
         updateNotificationSettings,
         resetPasswordForm,
         handlePasswordChange,
-        handleNotificationUpdate,
-        handleProfileDataUpdate,
+        handleNotificationUpdate,        handleProfileDataUpdate,
         updateProfilePicture,
         deleteProfilePicture,
+        requestEmailVerification,
+        changeEmail,
+        deleteAccount,
+        validateAndUploadImage,
         getInitials,
       }}
     >
@@ -263,9 +321,3 @@ export function ProfileProvider({
     </ProfileContext.Provider>
   );
 }
-
-export const useProfile = (): ProfileContextType => {
-  const context = useContext(ProfileContext);
-  if (!context) throw new Error("useProfile must be used within a ProfileProvider");
-  return context;
-};

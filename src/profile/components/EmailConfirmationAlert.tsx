@@ -2,9 +2,7 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
 import { Mail, X, RefreshCw, Clock } from "lucide-react";
-import { themedToast } from "../../lib/toast";
-import { useAuthStore } from "../../auth/store/authStore";
-import { parseError } from "../../lib/utils";
+import { useProfile } from "../hooks/useProfile";
 import type { User } from "../../auth/store/authStore";
 
 interface EmailConfirmationAlertProps {
@@ -13,9 +11,9 @@ interface EmailConfirmationAlertProps {
 
 export function EmailConfirmationAlert({ user }: EmailConfirmationAlertProps) {
   const [showNotification, setShowNotification] = useState(true);
-  const [isResending, setIsResending] = useState(false);
   const [lastResendTime, setLastResendTime] = useState<number | null>(null);
-  const { requestEmailVerification } = useAuthStore();
+  const { requestEmailVerification, state } = useProfile();
+  const { isSaving } = state;
 
   if (!user || user.emailConfirmed || !showNotification) {
     return null;
@@ -24,24 +22,13 @@ export function EmailConfirmationAlert({ user }: EmailConfirmationAlertProps) {
   const canResend = !lastResendTime || Date.now() - lastResendTime > 60000; // 1 minute cooldown
 
   const handleResendEmail = async () => {
-  if (!user.email || isResending || !canResend) return;
-
-  setIsResending(true);
-  try {
-    await requestEmailVerification(user.email);
-    setLastResendTime(Date.now());
-    themedToast.success("Verification email sent", {
-      description: "Please check your email inbox",
-    });
-  } catch (error: unknown) {
-    const message = parseError(error);
-    themedToast.error("Failed to send verification email", {
-      description: message,
-    });
-  } finally {
-    setIsResending(false);
-  }
-};
+    if (!user.email || isSaving || !canResend) return;    try {
+      await requestEmailVerification(user.email);
+      setLastResendTime(Date.now());
+    } catch {
+      // Error handling is done in the context
+    }
+  };
 
   return (
     <Alert className="relative mb-6 bg-sunglow/10 border-sunglow">
@@ -63,15 +50,14 @@ export function EmailConfirmationAlert({ user }: EmailConfirmationAlertProps) {
       <AlertDescription className="text-muted-foreground space-y-3">
         <p>Please verify your email address to access all features.</p>
 
-        <div className="flex items-center gap-2 pt-1">
-          <Button
+        <div className="flex items-center gap-2 pt-1">          <Button
             onClick={handleResendEmail}
-            disabled={isResending || !canResend}
+            disabled={isSaving || !canResend}
             size="sm"
             variant="outline"
             className="border-sunglow text-sunglow hover:bg-sunglow/10"
           >
-            {isResending ? (
+            {isSaving ? (
               <>
                 <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                 Sending...

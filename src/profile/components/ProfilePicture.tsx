@@ -14,44 +14,30 @@ import {
   AvatarImage,
 } from "../../components/ui/avatar";
 import { Loader2, AlertCircle, Upload, Trash2, Camera } from "lucide-react";
-import { useProfile } from "../context/profileContext";
-import { compressImage, validateImageFile } from "../utils/imageUtils";
+import { useProfile } from "../hooks/useProfile";
 
 export function ProfilePicture() {
-  const { state, updateProfilePicture, deleteProfilePicture, getInitials } =
+  const { state, validateAndUploadImage, deleteProfilePicture, getInitials } =
     useProfile();
   const { isSaving, saveError, profileData } = state;
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Reset states
-    setUploadError(null);
-
-    // Validate file
-    const validation = validateImageFile(file);
-    if (!validation.isValid) {
-      setUploadError(validation.errorMessage);
-      return;
-    }
-
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
-    // Compress image
-    const compressedFile = await compressImage(file, 3);
-
-    // Upload to server
-    await updateProfilePicture(compressedFile);
-
-    // Clean up preview URL
-    URL.revokeObjectURL(objectUrl);
-    setPreviewUrl(null);
+    setPreviewUrl(objectUrl);    try {
+      await validateAndUploadImage(file);
+    } catch {
+      // Error handling is done in the context
+    } finally {
+      // Clean up preview URL
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null);
+    }
   };
 
   const handleDeleteClick = async () => {
@@ -138,11 +124,10 @@ export function ProfilePicture() {
             )}
           </div>
 
-          {/* Error message */}
-          {(uploadError || saveError) && (
+          {/* Error message */}          {saveError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{uploadError || saveError}</AlertDescription>
+              <AlertDescription>{saveError}</AlertDescription>
             </Alert>
           )}
 
