@@ -4,23 +4,37 @@ import { useProfile } from "../hooks/useProfile";
 
 export function StatusMessages() {
   const { state } = useProfile();
-  const { saveSuccess, saveError } = state;
+  const { 
+    emailChangeSuccess, 
+    emailChangeError,
+    passwordChangeSuccess, 
+    passwordChangeError,
+    notificationUpdateSuccess, 
+    notificationUpdateError,
+    profileUpdateSuccess, 
+    profileUpdateError 
+  } = state;
 
-  if (!saveSuccess && !saveError) return null;
+  const hasSuccess = emailChangeSuccess || passwordChangeSuccess || notificationUpdateSuccess || profileUpdateSuccess;
+  const hasError = emailChangeError || passwordChangeError || notificationUpdateError || profileUpdateError;
+
+  if (!hasSuccess && !hasError) return null;
 
   return (
     <>
-      {saveSuccess && (
+      {hasSuccess && (
         <Alert className="mb-6 bg-green-50 border-green-200 text-green-800">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription>Changes saved successfully!</AlertDescription>
         </Alert>
       )}
 
-      {saveError && (
+      {hasError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{saveError}</AlertDescription>
+          <AlertDescription>
+            {emailChangeError || passwordChangeError || notificationUpdateError || profileUpdateError}
+          </AlertDescription>
         </Alert>
       )}
     </>

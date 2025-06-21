@@ -3,7 +3,6 @@ import { Tabs, TabsContent } from "../components/ui/tabs";
 import { ProfileProvider } from "../profile/context/profileContext";
 import { useProfile } from "../profile/hooks/useProfile";
 import { ProfileTabs } from "../profile/components/ProfileTabs";
-import { StatusMessages } from "../profile/components/StatusMessages";
 import { ProfileTab } from "../profile/components/ProfileTab";
 import { SecurityTab } from "../profile/components/SecurityTab";
 import { NotificationsTab } from "../profile/components/NotificationsTab";

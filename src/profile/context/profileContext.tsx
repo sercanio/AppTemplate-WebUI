@@ -36,12 +36,8 @@ export function ProfileProvider({
     passwordChangeSuccess: false,
     passwordChangeError: null,
     notificationUpdateSuccess: false,
-    notificationUpdateError: null,
-    profileUpdateSuccess: false,
+    notificationUpdateError: null,    profileUpdateSuccess: false,
     profileUpdateError: null,
-    // Legacy states for backward compatibility
-    saveSuccess: false,
-    saveError: null,
     profileData: {
       userName: user?.userName || "",
       email: user?.email || "",
@@ -60,12 +56,8 @@ export function ProfileProvider({
   });
   useEffect(() => {
     setActiveTab(getInitialTabFromPath());
-  }, [getInitialTabFromPath]);
-  // State updaters
+  }, [getInitialTabFromPath]);  // State updaters
   const setIsSaving = (value: boolean) => setState(prev => ({ ...prev, isSaving: value }));
-  // Legacy setters for backward compatibility
-  const setSaveSuccess = (value: boolean) => setState(prev => ({ ...prev, saveSuccess: value }));
-  const setSaveError = (error: string | null) => setState(prev => ({ ...prev, saveError: error }));
   
   // Operation-specific setters
   const setEmailChangeSuccess = (value: boolean) => setState(prev => ({ ...prev, emailChangeSuccess: value }));
@@ -260,19 +252,18 @@ export function ProfileProvider({
       setIsSaving(false);
     }
   };
-
   const validateAndUploadImage = async (file: File) => {
     // Validate file
     const validation = validateImageFile(file);
     if (!validation.isValid) {
-      setSaveError(validation.errorMessage);
+      setProfileUpdateError(validation.errorMessage);
       themedToast.error(validation.errorMessage);
       return;
     }
 
     setIsSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
+    setProfileUpdateSuccess(false);
+    setProfileUpdateError(null);
 
     try {
       // Compress image
@@ -282,11 +273,11 @@ export function ProfileProvider({
       const result = await ProfilePictureService.uploadProfilePicture(compressedFile);
       updateProfileData({ profilePictureUrl: result.profilePictureUrl });
       updateUser({ profilePictureUrl: result.profilePictureUrl });
-      setSaveSuccess(true);
+      setProfileUpdateSuccess(true);
       themedToast.success("Profile picture updated successfully");
     } catch (error: unknown) {
       const msg = parseError(error);
-      setSaveError(msg);
+      setProfileUpdateError(msg);
       themedToast.error("Failed to upload profile picture");
       throw error;
     } finally {

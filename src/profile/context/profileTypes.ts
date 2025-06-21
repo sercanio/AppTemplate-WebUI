@@ -13,9 +13,6 @@ export type ProfileState = {
   notificationUpdateError: string | null;
   profileUpdateSuccess: boolean;
   profileUpdateError: string | null;
-  // Legacy states for backward compatibility
-  saveSuccess: boolean;
-  saveError: string | null;
   profileData: {
     userName: string;
     email: string;

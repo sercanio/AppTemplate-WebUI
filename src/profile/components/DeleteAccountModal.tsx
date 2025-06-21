@@ -20,7 +20,7 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
   const navigate = useNavigate();
   const { logout } = useAuthStore();
   const { deleteAccount, state } = useProfile();
-  const { isSaving, saveError } = state;
+  const { isSaving, profileUpdateError } = state;
 
   const confirmationText = "DELETE MY ACCOUNT";
 
@@ -58,11 +58,9 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
           <DialogDescription>
             This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
           </DialogDescription>
-        </DialogHeader>
-
-        {saveError && (
+        </DialogHeader>        {profileUpdateError && (
           <Alert variant="destructive">
-            <AlertDescription>{saveError}</AlertDescription>
+            <AlertDescription>{profileUpdateError}</AlertDescription>
           </Alert>
         )}
 

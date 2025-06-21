@@ -19,7 +19,7 @@ import { useProfile } from "../hooks/useProfile";
 export function ProfilePicture() {
   const { state, validateAndUploadImage, deleteProfilePicture, getInitials } =
     useProfile();
-  const { isSaving, saveError, profileData } = state;
+  const { isSaving, profileUpdateError, profileData } = state;
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,12 +122,11 @@ export function ProfilePicture() {
                 Remove
               </Button>
             )}
-          </div>
-
-          {/* Error message */}          {saveError && (
+          </div>          {/* Error message */}
+          {profileUpdateError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{saveError}</AlertDescription>
+              <AlertDescription>{profileUpdateError}</AlertDescription>
             </Alert>
           )}
 
