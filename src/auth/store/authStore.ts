@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AuthService, type RegisterUserData } from '../services/authService';
 import { AccountService, type NotificationPreferences, type PasswordChangeData, type EmailChangeData } from '../../profile/services/accountService';
+import { themedToast } from '../../lib/toast';
 
 export type User = {
   id: string;
@@ -140,23 +141,29 @@ export const useAuthStore = create<AuthState>()(
           requiresTwoFactor: false,
           twoFactorRememberMe: false,
         });
+        
+        themedToast.success('Two-factor authentication successful');
       } catch (error: unknown) {
         const err = error as { response?: { data?: { error?: string; message?: string } } };
+        const errorMessage = err.response?.data?.error || err.response?.data?.message || "2FA verification failed";
+        
         set({
-          error: err.response?.data?.error || err.response?.data?.message || "2FA verification failed",
+          error: errorMessage,
           isLoading: false,
         });
+        
+        themedToast.error('Verification failed. Please check your code and try again.');
         throw error;
       }
     },
 
     loginWithRecoveryCode: async (recoveryCode: string) => {
-      try {
+      try { 
         set({ isLoading: true, error: null });
         
         await AuthService.loginWithRecoveryCode(recoveryCode);
         
-        const userResponse = await AuthService.getCurrentUser();
+        const userResponse = await AuthService.getCurrentUser() ;
         set({
           user: userResponse,
           isAuthenticated: true,
@@ -164,12 +171,18 @@ export const useAuthStore = create<AuthState>()(
           requiresTwoFactor: false,
           twoFactorRememberMe: false,
         });
+        
+        themedToast.success('Recovery code authentication successful');
       } catch (error: unknown) {
         const err = error as { response?: { data?: { error?: string; message?: string } } };
+        const errorMessage = err.response?.data?.error || err.response?.data?.message || "Recovery code verification failed";
+        
         set({
-          error: err.response?.data?.error || err.response?.data?.message || "Recovery code verification failed",
+          error: errorMessage,
           isLoading: false,
         });
+        
+        themedToast.error('Verification failed. Please check your recovery code and try again.');
         throw error;
       }
     },
